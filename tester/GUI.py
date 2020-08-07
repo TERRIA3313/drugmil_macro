@@ -101,17 +101,17 @@ def get_list():
     get.attack_url = "http://drugmil.net/2/xgp/game.php?page=fleet"
     soup0 = get.soup(get.get_attack())
     h_data = soup0.find_all('option')
-    counter = 0
+    counters = 0
     list0 = []
-    while counter < len(h_data):
-        list0.append(h_data[counter].get_text())
-        counter += 1
+    while counters < len(h_data):
+        list0.append(h_data[counters].get_text())
+        counters += 1
     global number_list
-    counter = 0
-    while counter < len(h_data):
-        temps = re.split('[;]', str(h_data[counter]))
+    counters = 0
+    while counters < len(h_data):
+        temps = re.split('[;]', str(h_data[counters]))
         number_list.append(temps[2][:-4])
-        counter += 1
+        counters += 1
     return list0
 
 
