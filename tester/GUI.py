@@ -10,10 +10,45 @@ import time
 number_list = []
 
 
-def main_json():
-    with open('macro/main.json') as json_file:
-        cookie = json.load(json_file)
-    return cookie
+class Database:
+    def cookies(self):
+        with open('macro/main.json') as json_file:
+            cookies = json.load(json_file)
+        return cookies
+
+    def header(self):
+        header = {"Host": "drugmil.net", "Connection": "keep-alive",
+                  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                                'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36'}
+        return header
+
+
+database = Database()
+
+
+class Attack:
+    def __init__(self):
+        self.attack_data = ''
+        self.attack_url = ''
+
+    def url(self, attack_url):
+        self.attack_url = attack_url
+
+    def data(self, attack_data):
+        self.attack_data = attack_data
+
+    def get_attack(self):
+        return requests.get(url=self.attack_url, cookies=database.cookies(), headers=database.header(),
+                            allow_redirects=False, timeout=30)
+
+    def post_attack(self):
+        return requests.post(url=self.attack_url, cookies=database.cookies(), headers=database.header(),
+                             data=self.attack_data, allow_redirects=False, timeout=30)
+
+    def soup(self, attack):
+        html = attack.content
+        soup = BeautifulSoup(html, 'html.parser')
+        return soup
 
 
 def get_filename():
@@ -30,20 +65,16 @@ def get_filename():
 
 
 def get_usedfleet(galaxy, system, planet, galaxyend, systemend, planetend):
-    data = {'galaxy': galaxy, 'system': system, 'planet': planet, 'galaxyend': galaxyend, 'systemend': systemend,
-            'planetend': planetend, 'onsubmit': 'this.submit.disabled = true;'}
-    url = "http://drugmil.net/2/xgp/game.php?page=fleet1"
-    header = {"Host": "drugmil.net", "Connection": "keep-alive",
-              "Referer": "Http://drugmil.net/2/xgp/game.php?page=fleet"}
+    get = Attack()
+    get.attack_data = {'galaxy': galaxy, 'system': system, 'planet': planet, 'galaxyend': galaxyend,
+                       'systemend': systemend, 'planetend': planetend, 'onsubmit': 'this.submit.disabled = true;'}
+    get.attack_url = "http://drugmil.net/2/xgp/game.php?page=fleet1"
     with open('macro/data.json') as json_file1:
         json_data1 = json.load(json_file1)
-    cookie = main_json()
     keys = list(json_data1.keys())
     values = list(json_data1.values())
-    data[keys[0]] = values[0]
-    attack = requests.post(url=url, cookies=cookie, headers=header, data=data, timeout=30)
-    html = attack.content
-    soup = BeautifulSoup(html, 'html.parser')
+    get.attack_data[keys[0]] = values[0]
+    soup = get.soup(get.post_attack())
     p_data = soup.find_all('input')
     one_data = p_data[5]
     one_speed = p_data[4]
@@ -52,10 +83,8 @@ def get_usedfleet(galaxy, system, planet, galaxyend, systemend, planetend):
     one_usedfleet = {'usedfleet': t[-2], 'speedallsmin': p[-2]}
     with open('macro/div_usedfleet.json', 'w', encoding='utf-8') as g:
         json.dump(one_usedfleet, g, indent="\t")
-    data[keys[1]] = values[1]
-    attack = requests.post(url=url, cookies=cookie, headers=header, data=data, timeout=30)
-    html1 = attack.content
-    soup1 = BeautifulSoup(html1, 'html.parser')
+    get.attack_data[keys[1]] = values[1]
+    soup1 = get.soup(get.post_attack())
     p_data1 = soup1.find_all('input')
     two_data = p_data1[9]
     two_speed = p_data1[8]
@@ -67,12 +96,9 @@ def get_usedfleet(galaxy, system, planet, galaxyend, systemend, planetend):
 
 
 def get_list():
-    url0 = "http://drugmil.net/2/xgp/game.php?page=fleet"
-    header0 = {"Host": "drugmil.net", "Connection": "keep-alive"}
-    cookie0 = main_json()
-    attack0 = requests.post(url=url0, cookies=cookie0, headers=header0, timeout=30)
-    html0 = attack0.content
-    soup0 = BeautifulSoup(html0, 'html.parser')
+    get = Attack()
+    get.attack_url = "http://drugmil.net/2/xgp/game.php?page=fleet"
+    soup0 = get.soup(get.get_attack())
     h_data = soup0.find_all('option')
     counter = 0
     list0 = []
@@ -89,12 +115,9 @@ def get_list():
 
 
 def get_planet_number():
-    url = "http://drugmil.net/2/xgp/game.php?page=fleet"
-    header = {"Host": "drugmil.net", "Connection": "keep-alive"}
-    cookie = main_json()
-    attack = requests.post(url=url, cookies=cookie, headers=header, timeout=30)
-    html = attack.content
-    soup = BeautifulSoup(html, 'html.parser')
+    get = Attack()
+    get.attack_url = "http://drugmil.net/2/xgp/game.php?page=fleet"
+    soup = get.soup(get.get_attack())
     h_data = soup.find_all('option')
     return h_data
 
@@ -109,33 +132,33 @@ class Dialog1(wx.Dialog):
     def __init__(self, parent, id, title):
         wx.Dialog.__init__(self, parent, id, title, pos=wx.DefaultPosition, size=wx.Size(300, 300))
         self.SetSizeHintsSz(wx.DefaultSize, wx.DefaultSize)
-        bSizer1 = wx.BoxSizer(wx.VERTICAL)
+        sizer1 = wx.BoxSizer(wx.VERTICAL)
         self.text_division = wx.StaticText(self, 2001, u"항공전대 갯수",
                                            wx.DefaultPosition, wx.Size(300, -1), wx.ALIGN_CENTRE)
         self.text_division.Wrap(-1)
-        bSizer1.Add(self.text_division, 0, wx.ALL, 5)
+        sizer1.Add(self.text_division, 0, wx.ALL, 5)
         self.m_textCtrl1 = wx.TextCtrl(self, 2002, wx.EmptyString, wx.DefaultPosition, wx.Size(300, -1), 0)
-        bSizer1.Add(self.m_textCtrl1, 0, wx.ALL, 5)
+        sizer1.Add(self.m_textCtrl1, 0, wx.ALL, 5)
         self.text_number = wx.StaticText(self, 2003, u"클광용 번호(중뇌장형 : 219 ,린 : 250)",
                                          wx.DefaultPosition, wx.Size(300, -1), wx.ALIGN_CENTRE)
         self.text_number.Wrap(-1)
-        bSizer1.Add(self.text_number, 0, wx.ALL, 5)
+        sizer1.Add(self.text_number, 0, wx.ALL, 5)
         self.m_textCtrl2 = wx.TextCtrl(self, 2004, wx.EmptyString, wx.DefaultPosition, wx.Size(300, -1), 0)
-        bSizer1.Add(self.m_textCtrl2, 0, wx.ALL, 5)
+        sizer1.Add(self.m_textCtrl2, 0, wx.ALL, 5)
         self.text_password = wx.StaticText(self, 2003, u"클광용 유닛 갯수", wx.DefaultPosition,
                                            wx.Size(300, -1), wx.ALIGN_CENTRE)
         self.text_password.Wrap(-1)
-        bSizer1.Add(self.text_password, 0, wx.ALL, 5)
+        sizer1.Add(self.text_password, 0, wx.ALL, 5)
         self.m_textCtrl3 = wx.TextCtrl(self, 2004, wx.EmptyString, wx.DefaultPosition, wx.Size(300, -1), 0)
-        bSizer1.Add(self.m_textCtrl3, 0, wx.ALL, 5)
+        sizer1.Add(self.m_textCtrl3, 0, wx.ALL, 5)
         self.make_button = wx.Button(self, 2006, u"생성", wx.DefaultPosition, wx.Size(300, -1), 0)
-        bSizer1.Add(self.make_button, 0, wx.ALL, 5)
-        self.SetSizer(bSizer1)
+        sizer1.Add(self.make_button, 0, wx.ALL, 5)
+        self.SetSizer(sizer1)
         self.Layout()
         self.Centre(wx.BOTH)
-        self.Bind(wx.EVT_BUTTON, self.diaQuit, id=2006)  # 생성 버튼을 diaQuit에 바인드
+        self.Bind(wx.EVT_BUTTON, self.dia_quit, id=2006)  # 생성 버튼을 diaQuit에 바인드
 
-    def diaQuit(self, event):
+    def dia_quit(self, event):
         self.make()
         self.EndModal(1)
 
@@ -152,34 +175,35 @@ class Dialog(wx.Dialog):
     def __init__(self, parent, id, title):
         wx.Dialog.__init__(self, parent, id, title, pos=wx.DefaultPosition, size=wx.Size(300, 200))
         self.SetSizeHintsSz(wx.DefaultSize, wx.DefaultSize)
-        bSizer1 = wx.BoxSizer(wx.VERTICAL)
+        sizer1 = wx.BoxSizer(wx.VERTICAL)
         self.text_id = wx.StaticText(self, 1001, u"아이디", wx.DefaultPosition, wx.Size(300, -1), wx.ALIGN_CENTRE)
         self.text_id.Wrap(-1)
-        bSizer1.Add(self.text_id, 0, wx.ALL, 5)
+        sizer1.Add(self.text_id, 0, wx.ALL, 5)
         self.m_textCtrl1 = wx.TextCtrl(self, 1002, wx.EmptyString, wx.DefaultPosition, wx.Size(300, -1), 0)
-        bSizer1.Add(self.m_textCtrl1, 0, wx.ALL, 5)
+        sizer1.Add(self.m_textCtrl1, 0, wx.ALL, 5)
         self.text_password = wx.StaticText(self, 1003, u"비밀번호", wx.DefaultPosition, wx.Size(300, -1), wx.ALIGN_CENTRE)
         self.text_password.Wrap(-1)
-        bSizer1.Add(self.text_password, 0, wx.ALL, 5)
+        sizer1.Add(self.text_password, 0, wx.ALL, 5)
         self.m_textCtrl2 = wx.TextCtrl(self, 1004, wx.EmptyString, wx.DefaultPosition, wx.Size(300, -1), wx.TE_PASSWORD)
-        bSizer1.Add(self.m_textCtrl2, 0, wx.ALL, 5)
+        sizer1.Add(self.m_textCtrl2, 0, wx.ALL, 5)
         self.login_button = wx.Button(self, 1006, u"로그인", wx.DefaultPosition, wx.Size(300, -1), 0)
-        bSizer1.Add(self.login_button, 0, wx.ALL, 5)
-        self.SetSizer(bSizer1)
+        sizer1.Add(self.login_button, 0, wx.ALL, 5)
+        self.SetSizer(sizer1)
         self.Layout()
         self.Centre(wx.BOTH)
-        self.Bind(wx.EVT_BUTTON, self.diaQuit, id=1006)  # 로그인 버튼을 diaQuit에 바인드
+        self.Bind(wx.EVT_BUTTON, self.dia_quit, id=1006)  # 로그인 버튼을 diaQuit에 바인드
 
-    def diaQuit(self, event):
+    def dia_quit(self, event):
         self.login()
         self.EndModal(1)
 
     def login(self):
+        login = Attack()
         ids = str(self.m_textCtrl1.GetValue())
         password = str(self.m_textCtrl2.GetValue())
-        url = 'http://drugmil.net/2/xgp/index.php'
-        req_data = {'username': ids, 'password': password, 'submit': '로그인'}
-        res = requests.post(url=url, data=req_data, allow_redirects=False)
+        login.attack_url = 'http://drugmil.net/2/xgp/index.php'
+        login.attack_data = {'username': ids, 'password': password, 'submit': '로그인'}
+        res = login.post_attack()
         t = res.headers.get('Set-cookie')
         t = re.split('[=;]', t)
         name = '\354\225\275\352\264\264\353\260\200'
@@ -195,18 +219,19 @@ class Dialog(wx.Dialog):
 
 class Menu(wx.Frame):
     def __init__(self, parent, id, title):
-        wx.Frame.__init__(self, parent, id, title, wx.DefaultPosition, size=(520, 720), style=wx.DEFAULT_FRAME_STYLE ^ wx.MAXIMIZE_BOX)
-        menubar = wx.MenuBar()
-        mfile = wx.Menu()
-        mhelp = wx.Menu()
-        mfile.Append(101, '&로그인', '약괴밀 홈페이지에 로그인합니다')
-        mfile.Append(103, '&데이터 작성', '광질에 필요한 데이터를 작성합니다')
-        mfile.AppendSeparator()  # 구분선 추가
-        mfile.Append(102, '&종료\tCtrl+Q', '닫기')
-        menubar.Append(mfile, '&메인')
-        menubar.Append(mhelp, '&정보')
-        mhelp.Append(104, '&정보', '약괴밀 메크로 정보')
-        self.SetMenuBar(menubar)
+        wx.Frame.__init__(self, parent, id, title, wx.DefaultPosition, size=(520, 720),
+                          style=wx.DEFAULT_FRAME_STYLE ^ wx.MAXIMIZE_BOX)
+        menu_bar = wx.MenuBar()
+        file_bar = wx.Menu()
+        help_bar = wx.Menu()
+        file_bar.Append(101, '&로그인', '약괴밀 홈페이지에 로그인합니다')
+        file_bar.Append(103, '&데이터 작성', '광질에 필요한 데이터를 작성합니다')
+        file_bar.AppendSeparator()  # 구분선 추가
+        file_bar.Append(102, '&종료\tCtrl+Q', '닫기')
+        help_bar.Append(104, '&정보', '약괴밀 메크로 정보')
+        menu_bar.Append(file_bar, '&메인')
+        menu_bar.Append(help_bar, '&정보')
+        self.SetMenuBar(menu_bar)
         self.CreateStatusBar()  # 상태바 만들기
         panel = wx.Panel(self)
 
@@ -235,16 +260,17 @@ class Menu(wx.Frame):
         self.attacklist.Clear()
 
         planet_list = ['행성', '묘지']
-        self.planet_choice = wx.RadioBox(panel, 501, "행성", (155, 13), wx.DefaultSize, planet_list, 2, wx.RA_SPECIFY_COLS)
+        self.planet_choice = wx.RadioBox(panel, 501, "행성", (155, 13), wx.DefaultSize,
+                                         planet_list, 2, wx.RA_SPECIFY_COLS)
         radio_list = ['꿀광', '클광']
         self.choice = wx.RadioBox(panel, 500, "종류", (155, 58), wx.DefaultSize, radio_list, 2, wx.RA_SPECIFY_COLS)
 
         self.Layout()
         self.Centre(wx.BOTH)
 
-        self.Bind(wx.EVT_MENU, self.OnQuit, id=102)  # 종료에 OnQuit 바인드
-        self.Bind(wx.EVT_MENU, self.ShowCustomDialog, id=101)  # 로그인에 ShowCustomDialog 바인드
-        self.Bind(wx.EVT_MENU, self.ShowDataDialog, id=103)  # 데이터 작성에 ShowDataDialog 바인드
+        self.Bind(wx.EVT_MENU, self.on_quit, id=102)  # 종료에 OnQuit 바인드
+        self.Bind(wx.EVT_MENU, self.show_custom_dialog, id=101)  # 로그인에 ShowCustomDialog 바인드
+        self.Bind(wx.EVT_MENU, self.show_data_dialog, id=103)  # 데이터 작성에 ShowDataDialog 바인드
         self.Bind(wx.EVT_BUTTON, self.make_macro, id=215)  # 등록 버튼에 바인드
         self.Bind(wx.EVT_BUTTON, self.attack, id=219)  # 전체 공격 버튼에 바인드
         self.Bind(wx.EVT_RADIOBOX, self.set_div, self.choice)
@@ -252,21 +278,21 @@ class Menu(wx.Frame):
         self.Bind(wx.EVT_COMBOBOX, self.set_planet, self.box)
         self.Bind(wx.EVT_MENU, self.ifo, id=104)
 
-    def OnQuit(self, event):
+    def on_quit(self, event):
         self.Close()
 
-    def ShowCustomDialog(self, event):
+    def show_custom_dialog(self, event):
         if not os.path.isfile('macro/main.json'):
             dia = Dialog(self, -1, '로그인')
             dia.ShowModal()
             dia.Destroy()
             wx.Yield()
         else:
-            dlg = wx.MessageDialog(self, '이미 로그인되었습니다', '로그인', wx.OK|wx.ICON_INFORMATION)
+            dlg = wx.MessageDialog(self, '이미 로그인되었습니다', '로그인', wx.OK | wx.ICON_INFORMATION)
             dlg.ShowModal()
             dlg.Destroy()
 
-    def ShowDataDialog(self, event):
+    def show_data_dialog(self, event):
         if not os.path.isfile('macro/data.json'):
             dia1 = Dialog1(self, -1, '데이터 작성')
             dia1.ShowModal()
@@ -361,11 +387,9 @@ class Menu(wx.Frame):
             dlg.Destroy()
 
     def all_attack(self, point):
-        header = {"Host": "drugmil.net", "Connection": "keep-alive",
-                  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36'}
+        attack = Attack()
         with open('macro/' + point) as json_file1:
             json_data1 = json.load(json_file1)
-        cookie = main_json()
         temp = json_data1['thisgalaxy'] + ':' + json_data1['thissystem'] + ':' + json_data1['thisplanet']
         counter = 0
         list = get_list()
@@ -373,12 +397,17 @@ class Menu(wx.Frame):
         n = ''
         while counter < len(h_data):
             if temp in list[counter]:
-                n = str(number_list[counter])
+                if json_data1['thisplanettype'] == '3' and str('(묘지)') in list[counter]:
+                    n = str(number_list[counter])
+                    break
+                else:
+                    if not str('(묘지)') in list[counter]:
+                        n = str(number_list[counter])
+                        break
             counter += 1
-        url = "http://drugmil.net/2/xgp/game.php?page=fleet3&" + n
-        print(url)
-        attack = requests.post(url, cookies=cookie, headers=header, data=json_data1, allow_redirects=False, timeout=30)
-        res = attack.status_code
+        attack.attack_url = "http://drugmil.net/2/xgp/game.php?page=fleet3&" + n
+        attack.attack_data = json_data1
+        res = attack.post_attack().status_code
         viewer = point[:-5]
         if not res == 200:
             self.attacklist.Append(viewer + '는 공격하지 못했습니다.')
@@ -394,14 +423,16 @@ class Menu(wx.Frame):
     def ifo(self, event):
         dlg = wx.MessageDialog(self, '약괴밀 메크로 버전 3.1.1\n'
                                      '3.0 : GUI 모드화  3.1 : 실행불가 버그 수정\n'
-                                     '3.1.1 : 정보창 추가\n제작자 : 마리사라', '정보', wx.OK | wx.ICON_INFORMATION)
+                                     '3.1.1 : 정보창 추가  3.1.2 : 묘지관련 오류 수정\n'
+                                     '3.1.3 : 묘지관련 추가 오류 수정'
+                                     '\n제작자 : 마리사라', '정보', wx.OK | wx.ICON_INFORMATION)
         dlg.ShowModal()
         dlg.Destroy()
 
 
 class MyApp(wx.App):
     def OnInit(self):
-        frame = Menu(None, -1, '약괴밀 메크로 3.1.1')
+        frame = Menu(None, -1, '약괴밀 메크로 3.1.3')
         frame.Show(True)
         frame.Centre()
         return True
