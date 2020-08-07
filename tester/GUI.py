@@ -5,6 +5,7 @@ import json
 import os
 from bs4 import BeautifulSoup
 import time
+import threading
 
 
 number_list = []
@@ -126,6 +127,7 @@ choice = 0
 planet_type = 0
 choose = []
 choose_number = 0
+counter = 0
 
 
 class Dialog1(wx.Dialog):
@@ -272,7 +274,7 @@ class Menu(wx.Frame):
         self.Bind(wx.EVT_MENU, self.show_custom_dialog, id=101)  # 로그인에 ShowCustomDialog 바인드
         self.Bind(wx.EVT_MENU, self.show_data_dialog, id=103)  # 데이터 작성에 ShowDataDialog 바인드
         self.Bind(wx.EVT_BUTTON, self.make_macro, id=215)  # 등록 버튼에 바인드
-        self.Bind(wx.EVT_BUTTON, self.attack, id=219)  # 전체 공격 버튼에 바인드
+        self.Bind(wx.EVT_BUTTON, self.thread, id=219)  # 전체 공격 버튼에 바인드
         self.Bind(wx.EVT_RADIOBOX, self.set_div, self.choice)
         self.Bind(wx.EVT_RADIOBOX, self.set_type, self.planet_choice)
         self.Bind(wx.EVT_COMBOBOX, self.set_planet, self.box)
@@ -362,19 +364,34 @@ class Menu(wx.Frame):
         global planet_type
         planet_type = self.planet_choice.GetSelection()
 
-    def attack(self, event):
+    def thread(self, event):
+        global counter
+        if counter == 0:
+            t = threading.Thread(target=self.attack)
+            t.start()
+            counter = 1
+        else:
+            dlg = wx.MessageDialog(self, '이미 공격이 진행중입니다.', '공격 진행중', wx.OK | wx.ICON_INFORMATION)
+            dlg.ShowModal()
+            dlg.Destroy()
+
+    def attack(self):
+        global counter
         attack_list = get_filename()
         if not os.path.isfile('macro/main.json'):
             dlg = wx.MessageDialog(self, '메인 - 로그인으로 로그인먼저 해야합니다.', '로그인 필요', wx.OK | wx.ICON_INFORMATION)
             dlg.ShowModal()
+            counter = 0
             dlg.Destroy()
         elif not os.path.isfile('macro/data.json'):
             dlg = wx.MessageDialog(self, '메인 - 데이터작성 으로 데이터 작성먼저 해야합니다.', '데이터 작성 필요', wx.OK | wx.ICON_INFORMATION)
             dlg.ShowModal()
+            counter = 0
             dlg.Destroy()
         elif not attack_list:
             dlg = wx.MessageDialog(self, '공격 데이터가 없습니다', '공격 데이터 작성 필요', wx.OK | wx.ICON_INFORMATION)
             dlg.ShowModal()
+            counter = 0
             dlg.Destroy()
         else:
             counter = len(attack_list)
@@ -384,6 +401,7 @@ class Menu(wx.Frame):
                 counter -= 1
             dlg = wx.MessageDialog(self, '모든 목표를 공격했습니다', '공격 완료', wx.OK | wx.ICON_INFORMATION)
             dlg.ShowModal()
+            counter = 0
             dlg.Destroy()
 
     def all_attack(self, point):
@@ -424,7 +442,8 @@ class Menu(wx.Frame):
         dlg = wx.MessageDialog(self, '약괴밀 메크로 버전 3.1.1\n'
                                      '3.0 : GUI 모드화  3.1 : 실행불가 버그 수정\n'
                                      '3.1.1 : 정보창 추가  3.1.2 : 묘지관련 오류 수정\n'
-                                     '3.1.3 : 묘지관련 추가 오류 수정'
+                                     '3.1.3 : 묘지관련 추가 오류 수정\n'
+                                     '3.2 : 쓰레드 기능 구현'
                                      '\n제작자 : 마리사라', '정보', wx.OK | wx.ICON_INFORMATION)
         dlg.ShowModal()
         dlg.Destroy()
@@ -432,7 +451,7 @@ class Menu(wx.Frame):
 
 class MyApp(wx.App):
     def OnInit(self):
-        frame = Menu(None, -1, '약괴밀 메크로 3.1.3')
+        frame = Menu(None, -1, '약괴밀 메크로 3.2')
         frame.Show(True)
         frame.Centre()
         return True
