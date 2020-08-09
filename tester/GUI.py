@@ -200,12 +200,13 @@ class Dialog(wx.Dialog):
         self.EndModal(1)
 
     def login(self):
-        login = Attack()
         ids = str(self.m_textCtrl1.GetValue())
         password = str(self.m_textCtrl2.GetValue())
-        login.attack_url = 'http://drugmil.net/2/xgp/index.php'
-        login.attack_data = {'username': ids, 'password': password, 'submit': '로그인'}
-        res = login.post_attack()
+        url = 'http://drugmil.net/2/xgp/index.php'
+        data = {'username': ids, 'password': password, 'submit': '로그인'}
+        res = requests.post(url=url, data=data, headers=database.header(), allow_redirects=False)
+        html = res.content
+        soup = BeautifulSoup(html, 'html.parser')
         t = res.headers.get('Set-cookie')
         t = re.split('[=;]', t)
         name = '\354\225\275\352\264\264\353\260\200'
