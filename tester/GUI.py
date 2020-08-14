@@ -6,9 +6,124 @@ import os
 from bs4 import BeautifulSoup
 import time
 import threading
+from cefpython3 import cefpython as cef
+import platform
+import sys
 
 
+WINDOWS = (platform.system() == "Windows")
+g_count_windows = 0
+WIDTH = 1920
+HEIGHT = 1080
 number_list = []
+is_map = False
+is_page = False
+filename = ''
+
+
+class CefApp(wx.App):
+    def __init__(self, redirect):
+        self.timer = None
+        self.timer_id = 1
+        self.is_initialized = False
+        super(CefApp, self).__init__(redirect=redirect)
+
+    def OnPreInit(self):
+        super(CefApp, self).OnPreInit()
+
+    def OnInit(self):
+        self.initialize()
+        return True
+
+    def initialize(self):
+        if self.is_initialized:
+            return
+        self.is_initialized = True
+        self.create_timer()
+        frame = Dialog3()
+        self.SetTopWindow(frame)
+
+    def create_timer(self):
+        self.timer = wx.Timer(self, self.timer_id)
+        self.Bind(wx.EVT_TIMER, self.on_timer, self.timer)
+        self.timer.Start(10)  # 10ms timer
+
+    def on_timer(self, _):
+        cef.MessageLoopWork()
+
+    def OnExit(self):
+        self.timer.Stop()
+        return 0
+
+
+class Dialog3(wx.Dialog):
+    def __init__(self):
+        self.browser = None
+        global g_count_windows
+        g_count_windows += 1
+        size = scale_window_size_for_high_dpi(WIDTH, HEIGHT)
+        wx.Dialog.__init__(self, parent=None, id=wx.ID_ANY,
+                          title='약괴밀', size=size)
+
+        self.Bind(wx.EVT_CLOSE, self.OnClose)
+        self.browser_panel = wx.Panel(self, style=wx.WANTS_CHARS)
+        self.browser_panel.Bind(wx.EVT_SET_FOCUS, self.OnSetFocus)
+        self.browser_panel.Bind(wx.EVT_SIZE, self.OnSize)
+        self.embed_browser()
+        self.Show()
+
+    def embed_browser(self):
+        window_info = cef.WindowInfo()
+        (width, height) = self.browser_panel.GetClientSize().Get()
+        assert self.browser_panel.GetHandle(), "Window handle not available"
+        window_info.SetAsChild(self.browser_panel.GetHandle(),
+                               [0, 0, width, height])
+        mgr = cef.CookieManager.GetGlobalManager()
+        cookie = cef.Cookie()
+        temp = database.cookies()
+        key = {'name': '약괴밀', 'value': temp['\354\225\275\352\264\264\353\260\200']}
+        cookie.Set(key)
+        mgr.SetCookie("http://drugmil.net/2/xgp/game.php", cookie)
+        self.browser = cef.CreateBrowserSync(window_info,
+                                             url="http://drugmil.net/2/xgp/game.php?")
+
+    def OnSetFocus(self, _):
+        if not self.browser:
+            return
+        if WINDOWS:
+            cef.WindowUtils.OnSetFocus(self.browser_panel.GetHandle(),
+                                       0, 0, 0)
+        self.browser.SetFocus(True)
+
+    def OnSize(self, _):
+        if not self.browser:
+            return
+        if WINDOWS:
+            cef.WindowUtils.OnSize(self.browser_panel.GetHandle(),
+                                   0, 0, 0)
+        self.browser.NotifyMoveOrResizeStarted()
+
+    def OnClose(self, event):
+        global is_page
+        if not self.browser:
+            return
+        self.browser.ParentWindowWillClose()
+        event.Skip()
+        self.clear_browser_references()
+        is_page = False
+
+    def clear_browser_references(self):
+        self.browser = None
+
+
+def scale_window_size_for_high_dpi(width, height):
+    (_, _, max_width, max_height) = wx.GetClientDisplayRect().Get()
+    (width, height) = cef.DpiAware.Scale((width, height))
+    if width > max_width:
+        width = max_width
+    if height > max_height:
+        height = max_height
+    return width, height
 
 
 class Database:
@@ -53,16 +168,16 @@ class Attack:
 
 
 def get_filename():
-    filename = os.listdir('macro')
+    file_name = os.listdir('macro')
     if os.path.isfile('macro/main.json'):
-        filename.remove('main.json')
+        file_name.remove('main.json')
     if os.path.isfile('macro/div_usedfleet.json'):
-        filename.remove('div_usedfleet.json')
+        file_name.remove('div_usedfleet.json')
     if os.path.isfile('macro/cus_usedfleet.json'):
-        filename.remove('cus_usedfleet.json')
+        file_name.remove('cus_usedfleet.json')
     if os.path.isfile('macro/data.json'):
-        filename.remove('data.json')
-    return filename
+        file_name.remove('data.json')
+    return file_name
 
 
 def get_usedfleet(galaxy, system, planet, galaxyend, systemend, planetend):
@@ -165,10 +280,10 @@ class Dialog1(wx.Dialog):
         self.EndModal(1)
 
     def make(self):
-        divison = str(self.m_textCtrl1.GetValue())
+        div = str(self.m_textCtrl1.GetValue())
         custom_number = str(self.m_textCtrl2.GetValue())
         custom_many = str(self.m_textCtrl3.GetValue())
-        data = {'ship221': divison, 'ship' + custom_number: custom_many}
+        data = {'ship221': div, 'ship' + custom_number: custom_many}
         with open('macro/data.json', 'w', encoding='utf-8') as g:
             json.dump(data, g, indent="\t")
 
@@ -205,8 +320,6 @@ class Dialog(wx.Dialog):
         url = 'http://drugmil.net/2/xgp/index.php'
         data = {'username': ids, 'password': password, 'submit': '로그인'}
         res = requests.post(url=url, data=data, headers=database.header(), allow_redirects=False)
-        html = res.content
-        soup = BeautifulSoup(html, 'html.parser')
         t = res.headers.get('Set-cookie')
         t = re.split('[=;]', t)
         name = '\354\225\275\352\264\264\353\260\200'
@@ -222,13 +335,14 @@ class Dialog(wx.Dialog):
 
 class Menu(wx.Frame):
     def __init__(self, parent, id, title):
-        wx.Frame.__init__(self, parent, id, title, wx.DefaultPosition, size=(520, 720),
-                          style=wx.DEFAULT_FRAME_STYLE ^ wx.MAXIMIZE_BOX)
+        wx.Frame.__init__(self, parent, id, title, wx.DefaultPosition, size=(460, 720),
+                          style=wx.DEFAULT_FRAME_STYLE ^ wx.MAXIMIZE_BOX) # 기본 사이즈 460, 720
         menu_bar = wx.MenuBar()
         file_bar = wx.Menu()
         help_bar = wx.Menu()
         file_bar.Append(101, '&로그인', '약괴밀 홈페이지에 로그인합니다')
         file_bar.Append(103, '&데이터 작성', '광질에 필요한 데이터를 작성합니다')
+        file_bar.Append(106, '약괴밀 화면', '약괴밀 페이지를 엽니다')
         file_bar.AppendSeparator()  # 구분선 추가
         file_bar.Append(102, '&종료\tCtrl+Q', '닫기')
         help_bar.Append(104, '&정보', '약괴밀 메크로 정보')
@@ -246,21 +360,21 @@ class Menu(wx.Frame):
 
         wx.StaticText(panel, id=211, label='목표 행성', pos=(45, 60))
 
-        self.input_galaxyend = wx.TextCtrl(panel, id=212, pos=(20, 82), size=(30, 22))
-        self.input_galaxyend.SetMaxLength(1)
-        self.input_systemend = wx.TextCtrl(panel, id=213, pos=(53, 82), size=(45, 22))
-        self.input_systemend.SetMaxLength(3)
-        self.input_planetend = wx.TextCtrl(panel, id=214, pos=(100, 82), size=(33, 22))
-        self.input_planetend.SetMaxLength(2)
+        self.input_galaxy_end = wx.TextCtrl(panel, id=212, pos=(20, 82), size=(30, 22))
+        self.input_galaxy_end.SetMaxLength(1)
+        self.input_system_end = wx.TextCtrl(panel, id=213, pos=(53, 82), size=(45, 22))
+        self.input_system_end.SetMaxLength(3)
+        self.input_planet_end = wx.TextCtrl(panel, id=214, pos=(100, 82), size=(33, 22))
+        self.input_planet_end.SetMaxLength(2)
 
         wx.Button(panel, id=215, label="등록", pos=(155, 112), size=(100, 30))
 
         wx.Button(panel, id=219, label="전체 공격", pos=(150, 312), size=(100, 100))
 
-        filename = get_filename()
-        self.listBox = wx.ListBox(panel, -1, (10, 120), (130, 510), filename, wx.LB_SINGLE)
-        self.attacklist = wx.ListBox(panel, -1, (330, 30), (150, 600), filename, wx.LB_SINGLE)
-        self.attacklist.Clear()
+        file_list = get_filename()
+        self.listBox = wx.ListBox(panel, -1, (10, 120), (130, 510), file_list, wx.LB_SINGLE)
+        self.attack_list = wx.ListBox(panel, -1, (280, 30), (150, 600), file_list, wx.LB_SINGLE)
+        self.attack_list.Clear()
 
         planet_list = ['행성', '묘지']
         self.planet_choice = wx.RadioBox(panel, 501, "행성", (155, 13), wx.DefaultSize,
@@ -270,7 +384,6 @@ class Menu(wx.Frame):
 
         self.Layout()
         self.Centre(wx.BOTH)
-
         self.Bind(wx.EVT_MENU, self.on_quit, id=102)  # 종료에 OnQuit 바인드
         self.Bind(wx.EVT_MENU, self.show_custom_dialog, id=101)  # 로그인에 ShowCustomDialog 바인드
         self.Bind(wx.EVT_MENU, self.show_data_dialog, id=103)  # 데이터 작성에 ShowDataDialog 바인드
@@ -280,6 +393,8 @@ class Menu(wx.Frame):
         self.Bind(wx.EVT_RADIOBOX, self.set_type, self.planet_choice)
         self.Bind(wx.EVT_COMBOBOX, self.set_planet, self.box)
         self.Bind(wx.EVT_MENU, self.ifo, id=104)
+        self.Bind(wx.EVT_MENU, self.open_drugmil, id=106)
+        self.Bind(wx.EVT_CLOSE, self.OnClose)
 
     def on_quit(self, event):
         self.Close()
@@ -292,6 +407,21 @@ class Menu(wx.Frame):
             wx.Yield()
         else:
             dlg = wx.MessageDialog(self, '이미 로그인되었습니다', '로그인', wx.OK | wx.ICON_INFORMATION)
+            dlg.ShowModal()
+            dlg.Destroy()
+
+    def open_drugmil(self, event):
+        global is_page
+        if not is_page:
+            sys.excepthook = cef.ExceptHook
+            settings = {}
+            if WINDOWS:
+                cef.DpiAware.EnableHighDpiSupport()
+            cef.Initialize(settings=settings)
+            CefApp(False)
+            is_page = True
+        else:
+            dlg = wx.MessageDialog(self, '이미 켜져있습니다', '약괴밀', wx.OK | wx.ICON_INFORMATION)
             dlg.ShowModal()
             dlg.Destroy()
 
@@ -323,11 +453,11 @@ class Menu(wx.Frame):
             galaxy = str(end[0])
             system = str(end[1])
             planet = str(end[2])
-            galaxyend = str(self.input_galaxyend.GetValue())
-            systemend = str(self.input_systemend.GetValue())
-            planetend = str(self.input_planetend.GetValue())
+            galaxy_end = str(self.input_galaxy_end.GetValue())
+            system_end = str(self.input_system_end.GetValue())
+            planet_end = str(self.input_planet_end.GetValue())
             if not os.path.isfile('macro/cus_usedfleet.json'):
-                get_usedfleet(galaxy, system, planet, galaxyend, systemend, planetend)
+                get_usedfleet(galaxy, system, planet, galaxy_end, system_end, planet_end)
             with open('macro/data.json') as json_file3:
                 temp = json.load(json_file3)
             temp1 = list(temp.keys())
@@ -345,12 +475,12 @@ class Menu(wx.Frame):
             if planet_type == 1:
                 temp3['thisplanettype'] = '3'
 
-            data = {'thisgalaxy': galaxy, 'thissystem': system, 'thisplanet': planet, 'galaxy': galaxyend,
-                    'system': systemend, 'planet': planetend, 'speed': '10', 'mission': '1', 'holdingtime': '0',
+            data = {'thisgalaxy': galaxy, 'thissystem': system, 'thisplanet': planet, 'galaxy': galaxy_end,
+                    'system': system_end, 'planet': planet_end, 'speed': '10', 'mission': '1', 'holdingtime': '0',
                     'planettype': '1'}
             data.update(usedfleet)
             data.update(temp3)
-            add_file = galaxyend + '_' + systemend + '_' + planetend
+            add_file = galaxy_end + '_' + system_end + '_' + planet_end
             add_list = add_file + '.json'
             with open('macro/' + add_list, 'w', encoding='utf-8') as make_file:
                 json.dump(data, make_file, indent="\t")
@@ -410,28 +540,28 @@ class Menu(wx.Frame):
         with open('macro/' + point) as json_file1:
             json_data1 = json.load(json_file1)
         temp = json_data1['thisgalaxy'] + ':' + json_data1['thissystem'] + ':' + json_data1['thisplanet']
-        counter = 0
-        list = get_list()
+        attack_counter = 0
+        attack_list = get_list()
         h_data = get_planet_number()
         n = ''
-        while counter < len(h_data):
-            if temp in list[counter]:
-                if json_data1['thisplanettype'] == '3' and str('(묘지)') in list[counter]:
-                    n = str(number_list[counter])
+        while attack_counter < len(h_data):
+            if temp in attack_list[attack_counter]:
+                if json_data1['thisplanettype'] == '3' and str('(묘지)') in attack_list[attack_counter]:
+                    n = str(number_list[attack_counter])
                     break
                 else:
-                    if not str('(묘지)') in list[counter]:
-                        n = str(number_list[counter])
+                    if not str('(묘지)') in attack_list[attack_counter]:
+                        n = str(number_list[attack_counter])
                         break
-            counter += 1
+            attack_counter += 1
         attack.attack_url = "http://drugmil.net/2/xgp/game.php?page=fleet3&" + n
         attack.attack_data = json_data1
         res = attack.post_attack().status_code
         viewer = point[:-5]
         if not res == 200:
-            self.attacklist.Append(viewer + '는 공격하지 못했습니다.')
+            self.attack_list.Append(viewer + '는 공격하지 못했습니다.')
         else:
-            self.attacklist.Append(viewer + '를 공격했습니다.')
+            self.attack_list.Append(viewer + '를 공격했습니다.')
         time.sleep(1.5)
 
     def set_planet(self, event):
@@ -444,15 +574,19 @@ class Menu(wx.Frame):
                                      '3.0 : GUI 모드화  3.1 : 실행불가 버그 수정\n'
                                      '3.1.1 : 정보창 추가  3.1.2 : 묘지관련 오류 수정\n'
                                      '3.1.3 : 묘지관련 추가 오류 수정\n'
-                                     '3.2 : 쓰레드 기능 구현'
+                                     '3.2 : 쓰레드 기능 구현  3.3 : 약괴밀 화면기능 추가'
                                      '\n제작자 : 마리사라', '정보', wx.OK | wx.ICON_INFORMATION)
         dlg.ShowModal()
         dlg.Destroy()
 
+    def OnClose(self, event):
+        event.Skip()
+        quit(0)
+
 
 class MyApp(wx.App):
     def OnInit(self):
-        frame = Menu(None, -1, '약괴밀 메크로 3.2')
+        frame = Menu(None, -1, '약괴밀 메크로 3.3')
         frame.Show(True)
         frame.Centre()
         return True
