@@ -8,9 +8,6 @@ import time
 import threading
 from cefpython3 import cefpython as cef
 
-g_count_windows = 0
-WIDTH = 1920
-HEIGHT = 1080
 number_list = []
 is_page = False
 folder_name = 'macro'
@@ -54,9 +51,7 @@ class CefApp(wx.App):
 class Dialog3(wx.Dialog):
     def __init__(self):
         self.browser = None
-        global g_count_windows
-        g_count_windows += 1
-        size = scale_window_size_for_high_dpi(WIDTH, HEIGHT)
+        size = scale_window_size_for_high_dpi(1920, 1080)
         wx.Dialog.__init__(self, parent=None, id=wx.ID_ANY,
                            title='약괴밀', size=size)
 
