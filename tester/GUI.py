@@ -7,9 +7,7 @@ from bs4 import BeautifulSoup
 import time
 import threading
 from cefpython3 import cefpython as cef
-import platform
 
-WINDOWS = (platform.system() == "Windows")
 g_count_windows = 0
 WIDTH = 1920
 HEIGHT = 1080
@@ -87,17 +85,15 @@ class Dialog3(wx.Dialog):
     def OnSetFocus(self, _):
         if not self.browser:
             return
-        if WINDOWS:
-            cef.WindowUtils.OnSetFocus(self.browser_panel.GetHandle(),
-                                       0, 0, 0)
+        cef.WindowUtils.OnSetFocus(self.browser_panel.GetHandle(),
+                                   0, 0, 0)
         self.browser.SetFocus(True)
 
     def OnSize(self, _):
         if not self.browser:
             return
-        if WINDOWS:
-            cef.WindowUtils.OnSize(self.browser_panel.GetHandle(),
-                                   0, 0, 0)
+        cef.WindowUtils.OnSize(self.browser_panel.GetHandle(),
+                               0, 0, 0)
         self.browser.NotifyMoveOrResizeStarted()
 
     def OnClose(self, event):
@@ -424,8 +420,7 @@ class Menu(wx.Frame):
         global is_page
         if not is_page:
             settings = {}
-            if WINDOWS:
-                cef.DpiAware.EnableHighDpiSupport()
+            cef.DpiAware.EnableHighDpiSupport()
             cef.Initialize(settings=settings)
             CefApp(False)
             is_page = True
