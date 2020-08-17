@@ -322,6 +322,76 @@ class Dialog(wx.Dialog):
             json.dump(cookie, g, indent="\t")
 
 
+class Fairy_attack(wx.Dialog):
+    def __init__(self, parent, id, title):
+        wx.Dialog.__init__(self, parent, id, title, pos=wx.DefaultPosition, size=wx.Size(300, 400))
+        sizer1 = wx.BoxSizer(wx.VERTICAL)
+        self.text_counter = wx.StaticText(self, 1, u"원하는 요정 수", wx.DefaultPosition, wx.Size(100, -1), wx.ALIGN_CENTRE)
+        self.text_counter.Wrap(-1)
+        sizer1.Add(self.text_counter, 0, wx.ALL, 5)
+        self.m_textCtrl1 = wx.TextCtrl(self, 2, wx.EmptyString, wx.DefaultPosition, wx.Size(100, -1), 0)
+        sizer1.Add(self.m_textCtrl1, 0, wx.ALL, 5)
+        self.button = wx.Button(self, 3, u"공격", wx.DefaultPosition, wx.Size(100, -1), 0)
+        sizer1.Add(self.button, 0, wx.ALL, 5)
+        self.attack_list_data = []
+        self.attack_list = wx.ListBox(self, -1, (130, 5), (150, 350), self.attack_list_data, wx.LB_SINGLE)
+        self.SetSizer(sizer1)
+        self.Layout()
+        self.Centre(wx.BOTH)
+        self.Bind(wx.EVT_BUTTON, self.thread, id=3)
+        self.count = 0
+
+    def thread(self, event):
+        if self.count == 0:
+            t1 = threading.Thread(target=self.attack)
+            t1.setDaemon(True)
+            self.count = 1
+            t1.start()
+        else:
+            dlg = wx.MessageDialog(self, '이미 요정 공격중입니다', '요정 공격중', wx.OK | wx.ICON_INFORMATION)
+            dlg.ShowModal()
+            dlg.Destroy()
+
+    def attack(self):
+        fairy_counter = int(self.m_textCtrl1.GetValue())
+        while fairy_counter != 0:
+            self.fairy_attack()
+            wx.Yield()
+            fairy_counter -= 1
+        dlg = wx.MessageDialog(self, '공격 완료!', '공격완료', wx.OK | wx.ICON_INFORMATION)
+        dlg.ShowModal()
+        dlg.Destroy()
+        self.count = 0
+
+    def fairy_attack(self):
+        attack = Attack()
+        attack.attack_url = "http://drugmil.net/2/xgp/pack_bonus14.php?mode=pack1"
+        while True:
+            time.sleep(0.5)
+            soup = attack.soup(attack.get_attack())
+            p_data = soup.find_all('td')
+            data = p_data[0].get_text()
+            if data == '\n':
+                data = ' 아이템 발견'
+            self.attack_list.Append('현재 위치 : ' + data)
+            breaker = '0'
+            if data == ' 무너진 고성':
+                self.attack_list.Append('요정 발견!')
+                time.sleep(0.8)
+                attack.attack_url = 'http://drugmil.net/2/xgp/pack_bonus15.php?mode=pack2'
+                while True:
+                    y_soup = attack.soup(attack.get_attack())
+                    helper = y_soup.find('a', 'button')
+                    self.attack_list.Append("요정 공격!")
+                    time.sleep(0.8)
+                    if 'achatbonus14.php' in helper['href']:
+                        self.attack_list.Append("요청 처치 완료")
+                        breaker = '1'
+                        break
+            if breaker == '1':
+                break
+
+
 class Menu(wx.Frame):
     def __init__(self, parent, id, title):
         wx.Frame.__init__(self, parent, id, title, wx.DefaultPosition, size=(460, 720),
@@ -329,6 +399,7 @@ class Menu(wx.Frame):
         menu_bar = wx.MenuBar()
         file_bar = wx.Menu()
         help_bar = wx.Menu()
+        convenience_bar = wx.Menu()
         file_bar.Append(101, '&로그인', '약괴밀 홈페이지에 로그인합니다')
         file_bar.Append(103, '&데이터 작성', '광질에 필요한 데이터를 작성합니다')
         file_bar.Append(105, '&macro 폴더 선택', 'macro 폴더를 임의로 선택합니다')
@@ -336,8 +407,14 @@ class Menu(wx.Frame):
         file_bar.AppendSeparator()  # 구분선 추가
         file_bar.Append(102, '&종료\tCtrl+Q', '닫기')
         help_bar.Append(104, '&정보', '약괴밀 메크로 정보')
+        convenience_bar.Append(107, '출석체크', '약괴밀 출석체크')
+        convenience_bar.Append(108, '요정 메크로', '원하는 만큼 요정을 잡습니다')
+        convenience_bar.Append(109, '행동력 교환', '수확부터 행동력 교환까지')
+        convenience_bar.Append(110, '카드팩 구매', '행동력으로 카드팩을 구매합니다')
+        convenience_bar.Append(111, '만능풍뎅이 사용', '만능풍뎅이로 카드를 레벨업합니다.')
         menu_bar.Append(file_bar, '&메인')
         menu_bar.Append(help_bar, '&정보')
+        menu_bar.Append(convenience_bar, '&편의기능')
         self.SetMenuBar(menu_bar)
         self.CreateStatusBar()  # 상태바 만들기
         self.panel = wx.Panel(self)
@@ -385,10 +462,22 @@ class Menu(wx.Frame):
         self.Bind(wx.EVT_MENU, self.ifo, id=104)
         self.Bind(wx.EVT_MENU, self.open_drugmil, id=106)
         self.Bind(wx.EVT_MENU, self.open_dir, id=105)
+        self.Bind(wx.EVT_MENU, self.attend, id=107)
+        self.Bind(wx.EVT_MENU, self.show_fairy, id=108)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
     def on_quit(self, event):
         self.Close()
+
+    def attend(self, event):
+        attend = Attack()
+        attend.attack_url = 'http://drugmil.net/2/xgp/pack_bonus3.php?mode=pack16'
+        data = attend.soup(attend.get_attack())
+        text = data.find('th', 'errormessage').get_text()
+        dlg = wx.MessageDialog(self, text, '출석체크', wx.OK | wx.ICON_INFORMATION)
+        dlg.ShowModal()
+        dlg.Destroy()
+        event.Skip()
 
     def open_dir(self, event):
         global folder_name
@@ -410,6 +499,17 @@ class Menu(wx.Frame):
             dlg = wx.MessageDialog(self, '이미 로그인되었습니다', '로그인', wx.OK | wx.ICON_INFORMATION)
             dlg.ShowModal()
             dlg.Destroy()
+
+    def show_fairy(self, event):
+        if not os.path.isfile(folder_name + '/main.json'):
+            dlg = wx.MessageDialog(self, '메인 - 로그인으로 로그인먼저 해야합니다.', '로그인 필요', wx.OK | wx.ICON_INFORMATION)
+            dlg.ShowModal()
+            dlg.Destroy()
+        else:
+            dia1 = Fairy_attack(self, -1, '편의기능')
+            dia1.ShowModal()
+            dia1.Destroy()
+            wx.Yield()
 
     def open_drugmil(self, event):
         global is_page
