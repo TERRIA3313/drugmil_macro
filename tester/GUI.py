@@ -6,113 +6,10 @@ import os
 from bs4 import BeautifulSoup
 import time
 import threading
-from cefpython3 import cefpython as cef
 
 number_list = []
 is_page = False
 folder_name = 'macro'
-
-
-class CefApp(wx.App):
-    def __init__(self, redirect):
-        self.timer = None
-        self.timer_id = 1
-        self.is_initialized = False
-        super(CefApp, self).__init__(redirect=redirect)
-
-    def OnPreInit(self):
-        super(CefApp, self).OnPreInit()
-
-    def OnInit(self):
-        self.initialize()
-        return True
-
-    def initialize(self):
-        if self.is_initialized:
-            return
-        self.is_initialized = True
-        self.create_timer()
-        frame = Dialog3()
-        self.SetTopWindow(frame)
-
-    def create_timer(self):
-        self.timer = wx.Timer(self, self.timer_id)
-        self.Bind(wx.EVT_TIMER, self.on_timer, self.timer)
-        self.timer.Start(10)  # 10ms timer
-
-    def on_timer(self, _):
-        cef.MessageLoopWork()
-
-    def OnExit(self):
-        self.timer.Stop()
-        return 0
-
-
-class Dialog3(wx.Dialog):
-    def __init__(self):
-        self.browser = None
-        size = scale_window_size_for_high_dpi(1920, 1080)
-        wx.Dialog.__init__(self, parent=None, id=wx.ID_ANY,
-                           title='약괴밀', size=size)
-
-        self.Bind(wx.EVT_CLOSE, self.OnClose)
-        self.browser_panel = wx.Panel(self, style=wx.WANTS_CHARS)
-        self.browser_panel.Bind(wx.EVT_SET_FOCUS, self.OnSetFocus)
-        self.browser_panel.Bind(wx.EVT_SIZE, self.OnSize)
-        self.embed_browser()
-        self.Show()
-
-    def embed_browser(self):
-        window_info = cef.WindowInfo()
-        (width, height) = self.browser_panel.GetClientSize().Get()
-        assert self.browser_panel.GetHandle(), "Window handle not available"
-        window_info.SetAsChild(self.browser_panel.GetHandle(),
-                               [0, 0, width, height])
-        mgr = cef.CookieManager.GetGlobalManager()
-        cookie = cef.Cookie()
-        temp = database.cookies()
-        key = {'name': '약괴밀', 'value': temp['\354\225\275\352\264\264\353\260\200']}
-        cookie.Set(key)
-        mgr.SetCookie("http://drugmil.net/2/xgp/game.php", cookie)
-        self.browser = cef.CreateBrowserSync(window_info,
-                                             url="http://drugmil.net/2/xgp/game.php?")
-
-    def OnSetFocus(self, _):
-        if not self.browser:
-            return
-        cef.WindowUtils.OnSetFocus(self.browser_panel.GetHandle(),
-                                   0, 0, 0)
-        self.browser.SetFocus(True)
-
-    def OnSize(self, _):
-        if not self.browser:
-            return
-        cef.WindowUtils.OnSize(self.browser_panel.GetHandle(),
-                               0, 0, 0)
-        self.browser.NotifyMoveOrResizeStarted()
-
-    def OnClose(self, event):
-        global is_page
-        if not self.browser:
-            return
-        self.browser.ParentWindowWillClose()
-        event.Skip()
-        self.clear_browser_references()
-        is_page = False
-        self.Destroy()
-
-    def clear_browser_references(self):
-        self.browser = None
-
-
-def scale_window_size_for_high_dpi(width, height):
-    (_, _, max_width, max_height) = wx.GetClientDisplayRect().Get()
-    (width, height) = cef.DpiAware.Scale((width, height))
-    if width > max_width:
-        width = max_width
-    if height > max_height:
-        height = max_height
-    return width, height
 
 
 class Database:
@@ -392,6 +289,250 @@ class Fairy_attack(wx.Dialog):
                 break
 
 
+class build(wx.Dialog):
+    def __init__(self, parent, id, title):
+        wx.Dialog.__init__(self, parent, id, title, pos=wx.DefaultPosition, size=wx.Size(650, 350))
+        wx.StaticText(self, id=1, label='건설 행성', pos=(35, 10))
+        a_list, p_list = [], []
+        if os.path.isfile(folder_name + '/main.json'):
+            a_list = get_list()
+            for i in a_list:
+                if '(묘지)' not in i:
+                    p_list.append(i)
+        self.box = wx.ComboBox(self, id=2, pos=(10, 32), size=(140, 22), choices=p_list)
+        self.choose_number = 0
+        self.n = number_list[self.choose_number]
+        data = Attack()
+        data.attack_url = "http://drugmil.net/2/xgp/game.php?page=buildings&" + self.n
+        soup = data.soup(data.get_attack())
+        red = soup.find_all('fieldset')
+
+        bank_data = Attack()
+        bank_data.attack_url = "http://drugmil.net/2/xgp/bank.php"
+        bank_soup = bank_data.soup(bank_data.get_attack())
+        bank_account = bank_soup.find_all('font', {'color': 'lime'})
+        bank_account = int(bank_account[1].get_text().replace(',', ''))
+
+        black = red[0].get_text().replace('  ', ' ').replace('.', '').split(' ')[2:-1]
+        black[0], black[1] = int(black[0]), int(black[1])
+        green = red[1].get_text().replace('  ', ' ').replace('.', '').split(' ')[2:-1]
+        green[0], green[1] = int(green[0]), int(green[1])
+        corn = red[2].get_text().replace('  ', ' ').replace('.', '').split(' ')[2:-1]
+        corn[0], corn[1] = int(corn[0]), int(corn[1])
+        have = soup.find_all('td', {'width': '90'})
+        self.have_resource = [int(have[0].get_text().replace('.', '')), int(have[1].get_text().replace('.', '')),
+                              int(have[2].get_text().replace('.', ''))]
+        wx.StaticText(self, id=3, label=u'보유 홍차', pos=(5, 60))
+        self.black_tea = wx.StaticText(self, id=4, label=format(self.have_resource[0], ','), pos=(5, 80))
+        wx.StaticText(self, id=5, label=u'보유 녹차', pos=(100, 60))
+        self.green_tea = wx.StaticText(self, id=6, label=format(self.have_resource[1], ','), pos=(100, 80))
+        wx.StaticText(self, id=7, label=u'보유 옥수수', pos=(190, 60))
+        self.corn = wx.StaticText(self, id=8, label=format(self.have_resource[2], ','), pos=(190, 80))
+        wx.StaticText(self, id=9, label=u'은행 옥수수', pos=(280, 60))
+        self.bank_corn = wx.StaticText(self, id=10, label=format(bank_account, ','), pos=(280, 80))
+
+        wx.StaticText(self, id=101, label=u'홍차밭 요구사항', pos=(5, 160))
+        self.make_black_tea_1 = wx.StaticText(self, id=102, label=format(black[0], ','), pos=(5, 180))
+        self.make_black_tea_2 = wx.StaticText(self, id=103, label=format(black[1], ','), pos=(100, 180))
+        wx.StaticText(self, id=104, label=u'녹차밭 요구사항', pos=(5, 210))
+        self.make_green_tea_1 = wx.StaticText(self, id=105, label=format(green[0], ','), pos=(5, 230))
+        self.make_green_tea_2 = wx.StaticText(self, id=1066, label=format(green[1], ','), pos=(100, 230))
+        wx.StaticText(self, id=107, label=u'옥수수밭 요구사항', pos=(5, 260))
+        self.make_corn_1 = wx.StaticText(self, id=108, label=format(corn[0], ','), pos=(5, 280))
+        self.make_corn_2 = wx.StaticText(self, id=109, label=format(corn[1], ','), pos=(100, 280))
+
+        wx.StaticText(self, id=201, label=u'홍차밭 부족사항', pos=(200, 160))
+        if self.have_resource[0] >= black[0]:
+            self.if_black_tea_1 = wx.StaticText(self, id=202, label=u'가능', pos=(200, 180))
+        else:
+            self.if_black_tea_1 = wx.StaticText(self, id=202, label='-' + format(black[0] - self.have_resource[0], ','),
+                                                pos=(200, 180))
+        if self.have_resource[1] >= black[1]:
+            self.if_black_tea_2 = wx.StaticText(self, id=203, label=u'가능', pos=(300, 180))
+        else:
+            self.if_black_tea_2 = wx.StaticText(self, id=203, label='-' + format(black[1] - self.have_resource[1], ','),
+                                                pos=(300, 180))
+        wx.StaticText(self, id=204, label=u'녹차밭 부족사항', pos=(200, 210))
+        if self.have_resource[0] >= green[0]:
+            self.if_green_tea_1 = wx.StaticText(self, id=204, label=u'가능', pos=(200, 230))
+        else:
+            self.if_green_tea_1 = wx.StaticText(self, id=204, label='-' + format(green[0] - self.have_resource[0], ','),
+                                                pos=(200, 230))
+        if self.have_resource[1] >= green[1]:
+            self.if_green_tea_2 = wx.StaticText(self, id=205, label=u'가능', pos=(300, 230))
+        else:
+            self.if_green_tea_2 = wx.StaticText(self, id=205, label='-' + format(green[1] - self.have_resource[1], ','),
+                                                pos=(300, 230))
+        wx.StaticText(self, id=206, label=u'옥수수밭 부족사항', pos=(200, 260))
+        if self.have_resource[0] >= corn[0]:
+            self.if_corn_1 = wx.StaticText(self, id=207, label=u'가능', pos=(200, 280))
+        else:
+            self.if_corn_1 = wx.StaticText(self, id=207, label='-' + format(corn[0] - self.have_resource[0], ','),
+                                           pos=(200, 280))
+        if self.have_resource[1] >= corn[1]:
+            self.if_corn_2 = wx.StaticText(self, id=208, label=u'가능', pos=(300, 280))
+        else:
+            self.if_corn_2 = wx.StaticText(self, id=208, label='-' + format(corn[1] - self.have_resource[1], ','),
+                                           pos=(300, 280))
+
+        wx.StaticText(self, id=301, label=u'환전으로 가능 여부', pos=(400, 160))
+        if self.have_resource[0] / 4 + self.have_resource[1] / 2 + self.have_resource[2] >= black[0] / 4 + black[1] / 2:
+            self.if_exchange_black_1 = wx.StaticText(self, id=302, label=u'가능', pos=(400, 180))
+        else:
+            self.if_exchange_black_1 = wx.StaticText(self, id=302, label=u'불가능', pos=(400, 180))
+        wx.StaticText(self, id=303, label=u'환전으로 가능 여부', pos=(400, 210))
+        if self.have_resource[0] / 4 + self.have_resource[1] / 2 + self.have_resource[2] >= green[0] / 4 + green[1] / 2:
+            self.if_exchange_green_1 = wx.StaticText(self, id=304, label=u'가능', pos=(400, 230))
+        else:
+            self.if_exchange_green_1 = wx.StaticText(self, id=304, label=u'불가능', pos=(400, 230))
+        wx.StaticText(self, id=305, label=u'환전으로 가능 여부', pos=(400, 260))
+        if self.have_resource[0] / 4 + self.have_resource[1] / 2 + self.have_resource[2] >= corn[0] / 4 + corn[1] / 2:
+            self.if_exchange_corn_1 = wx.StaticText(self, id=306, label=u'가능', pos=(400, 280))
+        else:
+            self.if_exchange_corn_1 = wx.StaticText(self, id=306, label=u'불가능', pos=(400, 280))
+
+        self.build_black_button = wx.Button(self, id=1001, label=u"건설", pos=(550, 155), size=(50, 30))
+        self.build_green_button = wx.Button(self, id=1002, label=u"건설", pos=(550, 210), size=(50, 30))
+        self.build_corn_button = wx.Button(self, id=1003, label=u"건설", pos=(550, 260), size=(50, 30))
+        self.Layout()
+        self.Centre(wx.BOTH)
+        self.count = 0
+
+        self.Bind(wx.EVT_COMBOBOX, self.set_planet, self.box)
+        self.Bind(wx.EVT_BUTTON, self.build_black, id=1001)
+        self.Bind(wx.EVT_BUTTON, self.build_green, id=1002)
+        self.Bind(wx.EVT_BUTTON, self.build_corn, id=1003)
+
+    def set_planet(self, event):
+        self.choose_number = self.box.GetSelection()
+        self.show_resource()
+        wx.Yield()
+
+    def show_resource(self):
+        self.n = number_list[self.choose_number]
+        data = Attack()
+        data.attack_url = "http://drugmil.net/2/xgp/game.php?page=buildings&" + self.n
+        soup = data.soup(data.get_attack())
+        red = soup.find_all('fieldset')
+
+        black = red[0].get_text().replace('  ', ' ').replace('.', '').split(' ')[2:-1]
+        black[0], black[1] = int(black[0]), int(black[1])
+        green = red[1].get_text().replace('  ', ' ').replace('.', '').split(' ')[2:-1]
+        green[0], green[1] = int(green[0]), int(green[1])
+        corn = red[2].get_text().replace('  ', ' ').replace('.', '').split(' ')[2:-1]
+        corn[0], corn[1] = int(corn[0]), int(corn[1])
+        have = soup.find_all('td', {'width': '90'})
+        self.have_resource = [int(have[0].get_text().replace('.', '')), int(have[1].get_text().replace('.', '')),
+                              int(have[2].get_text().replace('.', ''))]
+        self.black_tea.SetLabel(format(self.have_resource[0], ','))
+        self.green_tea.SetLabel(format(self.have_resource[1], ','))
+        self.corn.SetLabel(format(self.have_resource[2], ','))
+
+        self.make_black_tea_1.SetLabel(format(black[0], ','))
+        self.make_black_tea_2.SetLabel(format(black[1], ','))
+        self.make_green_tea_1.SetLabel(format(green[0], ','))
+        self.make_green_tea_2.SetLabel(format(green[1], ','))
+        self.make_corn_1.SetLabel(format(corn[0], ','))
+        self.make_corn_2.SetLabel(format(corn[0], ','))
+
+        if self.have_resource[0] >= black[0]:
+            self.if_black_tea_1.SetLabel(u'가능')
+        else:
+            self.if_black_tea_1.SetLabel('-' + format(black[0] - self.have_resource[0], ','))
+        if self.have_resource[1] >= black[1]:
+            self.if_black_tea_2.SetLabel(u'가능')
+        else:
+            self.if_black_tea_2.SetLabel('-' + format(black[1] - self.have_resource[1], ','))
+        if self.have_resource[0] >= green[0]:
+            self.if_green_tea_1.SetLabel(u'가능')
+        else:
+            self.if_green_tea_1.SetLabel('-' + format(green[0] - self.have_resource[0], ','))
+        if self.have_resource[1] >= green[1]:
+            self.if_green_tea_2.SetLabel(u'가능')
+        else:
+            self.if_green_tea_2.SetLabel('-' + format(green[1] - self.have_resource[1], ','))
+        if self.have_resource[0] >= corn[0]:
+            self.if_corn_1.SetLabel(u'가능')
+        else:
+            self.if_corn_1.SetLabel('-' + format(corn[0] - self.have_resource[0], ','))
+        if self.have_resource[1] >= corn[1]:
+            self.if_corn_2.SetLabel(u'가능')
+        else:
+            self.if_corn_2.SetLabel('-' + format(corn[1] - self.have_resource[1], ','))
+
+        wx.StaticText(self, id=7, label=u'환전으로 가능 여부', pos=(400, 160))
+        if self.have_resource[0] / 4 + self.have_resource[1] / 2 + self.have_resource[2] > black[0] / 4 + black[1] / 2:
+            self.if_exchange_black_1.SetLabel(u'가능')
+        else:
+            self.if_exchange_black_1.SetLabel(u'불가능')
+        wx.StaticText(self, id=7, label=u'환전으로 가능 여부', pos=(400, 210))
+        if self.have_resource[0] / 4 + self.have_resource[1] / 2 + self.have_resource[2] > green[0] / 4 + green[1] / 2:
+            self.if_exchange_green_1.SetLabel(u'가능')
+        else:
+            self.if_exchange_green_1.SetLabel(u'불가능')
+        wx.StaticText(self, id=7, label=u'환전으로 가능 여부', pos=(400, 260))
+        if self.have_resource[0] / 4 + self.have_resource[1] / 2 + self.have_resource[2] > corn[0] / 4 + corn[1] / 2:
+            self.if_exchange_corn_1.SetLabel(u'가능')
+        else:
+            self.if_exchange_corn_1.SetLabel(u'불가능')
+
+    def build_black(self, event):
+        if self.if_exchange_black_1.GetLabel() == '불가능':
+            dlg = wx.MessageDialog(self, '건설이 불가능 합니다.', '건설 불가', wx.OK | wx.ICON_INFORMATION)
+            dlg.ShowModal()
+            dlg.Destroy()
+        else:
+            self.exchange(self.if_black_tea_1.GetLabel(), self.if_black_tea_2.GetLabel())
+            build_black = Attack()
+            build_black.attack_url = 'http://drugmil.net/2/xgp/game.php?page=buildings&cmd=insert&building=1&' + self.n
+            build_black.get_attack()
+            dlg = wx.MessageDialog(self, '건설하였습니다..', '건설', wx.OK | wx.ICON_INFORMATION)
+            dlg.ShowModal()
+            dlg.Destroy()
+
+    def build_green(self, event):
+        if self.if_exchange_green_1.GetLabel() == '불가능':
+            dlg = wx.MessageDialog(self, '건설이 불가능 합니다.', '건설 불가', wx.OK | wx.ICON_INFORMATION)
+            dlg.ShowModal()
+            dlg.Destroy()
+        else:
+            self.exchange(self.if_green_tea_1.GetLabel(), self.if_green_tea_2.GetLabel())
+            build_green = Attack()
+            build_green.attack_url = 'http://drugmil.net/2/xgp/game.php?page=buildings&cmd=insert&building=2&' + self.n
+            build_green.get_attack()
+            dlg = wx.MessageDialog(self, '건설하였습니다..', '건설', wx.OK | wx.ICON_INFORMATION)
+            dlg.ShowModal()
+            dlg.Destroy()
+
+    def build_corn(self, event):
+        if self.if_exchange_corn_1.GetLabel() == '불가능':
+            dlg = wx.MessageDialog(self, '건설이 불가능 합니다.', '건설 불가', wx.OK | wx.ICON_INFORMATION)
+            dlg.ShowModal()
+            dlg.Destroy()
+        else:
+            self.exchange(self.if_corn_1.GetLabel(), self.if_corn_2.GetLabel())
+            build_corn = Attack()
+            build_corn.attack_url = 'http://drugmil.net/2/xgp/game.php?page=buildings&cmd=insert&building=3&' + self.n
+            build_corn.get_attack()
+            dlg = wx.MessageDialog(self, '건설하였습니다..', '건설', wx.OK | wx.ICON_INFORMATION)
+            dlg.ShowModal()
+            dlg.Destroy()
+
+    def exchange(self, label1, label2):
+        if label1 == '가능':
+            black_tea = 0
+        else:
+            black_tea = int(label1[1:].replace(',', ''))
+        if label2 == '가능':
+            green_tea = 0
+        else:
+            green_tea = int(label2[1:].replace(',', ''))
+        exchange = Attack()
+        exchange.attack_url = 'http://drugmil.net/2/xgp/game.php?page=trader'
+        exchange.attack_data = {'ress': 'deuterium', 'metal': black_tea, 'cristal': green_tea}
+        exchange.soup(exchange.post_attack())
+
+
 class Menu(wx.Frame):
     def __init__(self, parent, id, title):
         wx.Frame.__init__(self, parent, id, title, wx.DefaultPosition, size=(460, 720),
@@ -403,7 +544,6 @@ class Menu(wx.Frame):
         file_bar.Append(101, '&로그인', '약괴밀 홈페이지에 로그인합니다')
         file_bar.Append(103, '&데이터 작성', '광질에 필요한 데이터를 작성합니다')
         file_bar.Append(105, '&macro 폴더 선택', 'macro 폴더를 임의로 선택합니다')
-        file_bar.Append(106, '약괴밀 화면', '약괴밀 페이지를 엽니다')
         file_bar.AppendSeparator()  # 구분선 추가
         file_bar.Append(102, '&종료\tCtrl+Q', '닫기')
         help_bar.Append(104, '&정보', '약괴밀 메크로 정보')
@@ -412,9 +552,10 @@ class Menu(wx.Frame):
         convenience_bar.Append(109, '행동력 교환', '수확부터 행동력 교환까지')
         convenience_bar.Append(110, '카드팩 구매', '행동력으로 카드팩을 구매합니다')
         convenience_bar.Append(111, '만능풍뎅이 사용', '만능풍뎅이로 카드를 레벨업합니다.')
+        convenience_bar.Append(112, '건설 도우미', '건물 건설에 필요한 기능들이 있습니다.')
         menu_bar.Append(file_bar, '&메인')
-        menu_bar.Append(help_bar, '&정보')
         menu_bar.Append(convenience_bar, '&편의기능')
+        menu_bar.Append(help_bar, '&정보')
         self.SetMenuBar(menu_bar)
         self.CreateStatusBar()  # 상태바 만들기
         self.panel = wx.Panel(self)
@@ -460,14 +601,25 @@ class Menu(wx.Frame):
         self.Bind(wx.EVT_RADIOBOX, self.set_type, self.planet_choice)
         self.Bind(wx.EVT_COMBOBOX, self.set_planet, self.box)
         self.Bind(wx.EVT_MENU, self.ifo, id=104)
-        self.Bind(wx.EVT_MENU, self.open_drugmil, id=106)
         self.Bind(wx.EVT_MENU, self.open_dir, id=105)
         self.Bind(wx.EVT_MENU, self.attend, id=107)
         self.Bind(wx.EVT_MENU, self.show_fairy, id=108)
+        self.Bind(wx.EVT_MENU, self.build_menu, id=112)  # 건물도우미
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
     def on_quit(self, event):
         self.Close()
+
+    def build_menu(self, event):
+        if not os.path.isfile(folder_name + '/main.json'):
+            dlg = wx.MessageDialog(self, '메인 - 로그인으로 로그인먼저 해야합니다.', '로그인 필요', wx.OK | wx.ICON_INFORMATION)
+            dlg.ShowModal()
+            dlg.Destroy()
+        else:
+            dia1 = build(self, -1, '건물 건설 도우미')
+            dia1.ShowModal()
+            dia1.Destroy()
+            wx.Yield()
 
     def attend(self, event):
         attend = Attack()
@@ -477,7 +629,6 @@ class Menu(wx.Frame):
         dlg = wx.MessageDialog(self, text, '출석체크', wx.OK | wx.ICON_INFORMATION)
         dlg.ShowModal()
         dlg.Destroy()
-        event.Skip()
 
     def open_dir(self, event):
         global folder_name
@@ -510,19 +661,6 @@ class Menu(wx.Frame):
             dia1.ShowModal()
             dia1.Destroy()
             wx.Yield()
-
-    def open_drugmil(self, event):
-        global is_page
-        if not is_page:
-            settings = {}
-            cef.DpiAware.EnableHighDpiSupport()
-            cef.Initialize(settings=settings)
-            CefApp(False)
-            is_page = True
-        else:
-            dlg = wx.MessageDialog(self, '이미 켜져있습니다', '약괴밀', wx.OK | wx.ICON_INFORMATION)
-            dlg.ShowModal()
-            dlg.Destroy()
 
     def show_data_dialog(self, event):
         if not os.path.isfile(folder_name + '/data.json'):
@@ -676,18 +814,18 @@ class Menu(wx.Frame):
                                      '3.1.3 : 묘지관련 추가 오류 수정\n'
                                      '3.2 : 쓰레드 기능 구현  3.3 : 약괴밀 화면기능 추가\n'
                                      '3.3.1 : macro폴더 선택기능 추가  3.3.2 : 쓰레드 관련 오류 수정'
+                                     '3.4 : 약괴밀 화면기능 삭제, 편의기능 추가'
                                      '\n제작자 : 마리사라', '정보', wx.OK | wx.ICON_INFORMATION)
         dlg.ShowModal()
         dlg.Destroy()
 
     def OnClose(self, event):
-        event.Skip()
         quit(0)
 
 
 class MyApp(wx.App):
     def OnInit(self):
-        frame = Menu(None, -1, '약괴밀 메크로 3.3.2')
+        frame = Menu(None, -1, '약괴밀 메크로 3.4')
         frame.Show(True)
         frame.Centre()
         return True
