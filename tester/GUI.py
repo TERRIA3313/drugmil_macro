@@ -7,14 +7,10 @@ from bs4 import BeautifulSoup
 import time
 import threading
 
-number_list = []
-is_page = False
-folder_name = 'macro'
-
 
 class Database:
     def cookies(self):
-        with open(folder_name + '/main.json') as json_file:
+        with open(global_data.folder_name + '/main.json') as json_file:
             cookies = json.load(json_file)
         return cookies
 
@@ -25,7 +21,60 @@ class Database:
         return header
 
 
-database = Database()
+class Global_data:
+    def __init__(self):
+        self.choice = 0
+        self.planet_type = 0
+        self.choose = []
+        self.choose_number = 0
+        self.counter = 0
+        self.number_list_data = []
+        self.folder_name = 'macro'
+
+    def add_number_list(self, list_data):
+        self.number_list_data.append(list_data)
+
+    def number_list(self):
+        return self.number_list_data
+
+    def folder_name(self):
+        return self.folder_name
+
+    def change_folder_name(self, name):
+        self.folder_name = name
+
+    def planet_type(self):
+        return self.planet_type
+
+    def change_planet_type(self, data):
+        self.planet_type = data
+
+    def choice(self):
+        return self.choice
+
+    def change_choice(self, data):
+        self.choice = data
+
+    def choose(self):
+        return self.choose
+
+    def change_choose(self, data):
+        self.choose = data
+
+    def choose_number(self):
+        return self.choose_number
+
+    def change_choose_number(self, data):
+        self.choose_number = data
+
+    def counter(self):
+        return self.counter
+
+    def change_counter(self, data):
+        self.counter = data
+
+
+global_data = Global_data()
 
 
 class Attack:
@@ -40,11 +89,11 @@ class Attack:
         self.attack_data = attack_data
 
     def get_attack(self):
-        return requests.get(url=self.attack_url, cookies=database.cookies(), headers=database.header(),
+        return requests.get(url=self.attack_url, cookies=Database().cookies(), headers=Database().header(),
                             allow_redirects=False, timeout=30)
 
     def post_attack(self):
-        return requests.post(url=self.attack_url, cookies=database.cookies(), headers=database.header(),
+        return requests.post(url=self.attack_url, cookies=Database().cookies(), headers=Database().header(),
                              data=self.attack_data, allow_redirects=False, timeout=30)
 
     def soup(self, attack):
@@ -53,82 +102,75 @@ class Attack:
         return soup
 
 
-def get_filename():
-    file_name = os.listdir(folder_name)
-    if os.path.isfile(folder_name + '/main.json'):
-        file_name.remove('main.json')
-    if os.path.isfile(folder_name + '/div_usedfleet.json'):
-        file_name.remove('div_usedfleet.json')
-    if os.path.isfile(folder_name + '/cus_usedfleet.json'):
-        file_name.remove('cus_usedfleet.json')
-    if os.path.isfile(folder_name + '/data.json'):
-        file_name.remove('data.json')
-    return file_name
+class get_data:
+    def __init__(self):
+        self.file_name = os.listdir(global_data.folder_name)
+        self.answer_list = []
 
+    def get_filename(self):
+        self.file_name = os.listdir(global_data.folder_name)
+        if os.path.isfile(global_data.folder_name + '/main.json'):
+            self.file_name.remove('main.json')
+        if os.path.isfile(global_data.folder_name + '/div_usedfleet.json'):
+            self.file_name.remove('div_usedfleet.json')
+        if os.path.isfile(global_data.folder_name + '/cus_usedfleet.json'):
+            self.file_name.remove('cus_usedfleet.json')
+        if os.path.isfile(global_data.folder_name + '/data.json'):
+            self.file_name.remove('data.json')
+        return self.file_name
 
-def get_usedfleet(galaxy, system, planet, galaxyend, systemend, planetend):
-    get = Attack()
-    get.attack_data = {'galaxy': galaxy, 'system': system, 'planet': planet, 'galaxyend': galaxyend,
-                       'systemend': systemend, 'planetend': planetend, 'onsubmit': 'this.submit.disabled = true;'}
-    get.attack_url = "http://drugmil.net/2/xgp/game.php?page=fleet1"
-    with open(folder_name + '/data.json') as json_file1:
-        json_data1 = json.load(json_file1)
-    keys = list(json_data1.keys())
-    values = list(json_data1.values())
-    get.attack_data[keys[0]] = values[0]
-    soup = get.soup(get.post_attack())
-    p_data = soup.find_all('input')
-    one_data = p_data[5]
-    one_speed = p_data[4]
-    t = re.split('[;"]', str(one_data))
-    p = re.split('[;"]', str(one_speed))
-    one_usedfleet = {'usedfleet': t[-2], 'speedallsmin': p[-2]}
-    with open(folder_name + '/div_usedfleet.json', 'w', encoding='utf-8') as g:
-        json.dump(one_usedfleet, g, indent="\t")
-    get.attack_data[keys[1]] = values[1]
-    soup1 = get.soup(get.post_attack())
-    p_data1 = soup1.find_all('input')
-    two_data = p_data1[9]
-    two_speed = p_data1[8]
-    t1 = re.split('[;"]', str(two_data))
-    p1 = re.split('[;"]', str(two_speed))
-    two_usedfleet = {'usedfleet': t1[-2], 'speedallsmin': p1[-2]}
-    with open(folder_name + '/cus_usedfleet.json', 'w', encoding='utf-8') as g:
-        json.dump(two_usedfleet, g, indent="\t")
+    def get_usedfleet(self, galaxy, system, planet, galaxyend, systemend, planetend):
+        get = Attack()
+        get.attack_data = {'galaxy': galaxy, 'system': system, 'planet': planet, 'galaxyend': galaxyend,
+                           'systemend': systemend, 'planetend': planetend, 'onsubmit': 'this.submit.disabled = true;'}
+        get.attack_url = "http://drugmil.net/2/xgp/game.php?page=fleet1"
+        with open(global_data.folder_name + '/data.json') as json_file1:
+            json_data1 = json.load(json_file1)
+        keys = list(json_data1.keys())
+        values = list(json_data1.values())
+        get.attack_data[keys[0]] = values[0]
+        soup = get.soup(get.post_attack())
+        p_data = soup.find_all('input')
+        one_data = p_data[5]
+        one_speed = p_data[4]
+        t = re.split('[;"]', str(one_data))
+        p = re.split('[;"]', str(one_speed))
+        one_usedfleet = {'usedfleet': t[-2], 'speedallsmin': p[-2]}
+        with open(global_data.folder_name + '/div_usedfleet.json', 'w', encoding='utf-8') as g:
+            json.dump(one_usedfleet, g, indent="\t")
+        get.attack_data[keys[1]] = values[1]
+        soup1 = get.soup(get.post_attack())
+        p_data1 = soup1.find_all('input')
+        two_data = p_data1[9]
+        two_speed = p_data1[8]
+        t1 = re.split('[;"]', str(two_data))
+        p1 = re.split('[;"]', str(two_speed))
+        two_usedfleet = {'usedfleet': t1[-2], 'speedallsmin': p1[-2]}
+        with open(global_data.folder_name + '/cus_usedfleet.json', 'w', encoding='utf-8') as g:
+            json.dump(two_usedfleet, g, indent="\t")
 
+    def get_list(self):
+        get = Attack()
+        get.attack_url = "http://drugmil.net/2/xgp/game.php?page=fleet"
+        get_list_soup = get.soup(get.get_attack())
+        h_data = get_list_soup.find_all('option')
+        counters = 0
+        while counters < len(h_data):
+            self.answer_list.append(h_data[counters].get_text())
+            counters += 1
+        counters = 0
+        while counters < len(h_data):
+            temps = re.split('[;]', str(h_data[counters]))
+            global_data.add_number_list(temps[2][:-4])
+            counters += 1
+        return self.answer_list
 
-def get_list():
-    get = Attack()
-    get.attack_url = "http://drugmil.net/2/xgp/game.php?page=fleet"
-    soup0 = get.soup(get.get_attack())
-    h_data = soup0.find_all('option')
-    counters = 0
-    list0 = []
-    while counters < len(h_data):
-        list0.append(h_data[counters].get_text())
-        counters += 1
-    global number_list
-    counters = 0
-    while counters < len(h_data):
-        temps = re.split('[;]', str(h_data[counters]))
-        number_list.append(temps[2][:-4])
-        counters += 1
-    return list0
-
-
-def get_planet_number():
-    get = Attack()
-    get.attack_url = "http://drugmil.net/2/xgp/game.php?page=fleet"
-    soup = get.soup(get.get_attack())
-    h_data = soup.find_all('option')
-    return h_data
-
-
-choice = 0
-planet_type = 0
-choose = []
-choose_number = 0
-counter = 0
+    def get_planet_number(self):
+        get = Attack()
+        get.attack_url = "http://drugmil.net/2/xgp/game.php?page=fleet"
+        soup = get.soup(get.get_attack())
+        h_data = soup.find_all('option')
+        return h_data
 
 
 class Dialog1(wx.Dialog):
@@ -170,7 +212,7 @@ class Dialog1(wx.Dialog):
         custom_number = str(self.m_textCtrl2.GetValue())
         custom_many = str(self.m_textCtrl3.GetValue())
         data = {'ship221': div, 'ship' + custom_number: custom_many}
-        with open(folder_name + '/data.json', 'w', encoding='utf-8') as g:
+        with open(global_data.folder_name + '/data.json', 'w', encoding='utf-8') as g:
             json.dump(data, g, indent="\t")
 
 
@@ -203,9 +245,10 @@ class Dialog(wx.Dialog):
     def login(self):
         ids = str(self.m_textCtrl1.GetValue())
         password = str(self.m_textCtrl2.GetValue())
-        url = 'http://drugmil.net/2/xgp/index.php'
-        data = {'username': ids, 'password': password, 'submit': '로그인'}
-        res = requests.post(url=url, data=data, headers=database.header(), allow_redirects=False)
+        login = Attack()
+        login.attack_url = 'http://drugmil.net/2/xgp/index.php'
+        login.attack_data = {'username': ids, 'password': password, 'submit': '로그인'}
+        res = login.post_attack()
         t = res.headers.get('Set-cookie')
         t = re.split('[=;]', t)
         name = '\354\225\275\352\264\264\353\260\200'
@@ -215,7 +258,7 @@ class Dialog(wx.Dialog):
         }
         if not (os.path.isdir('macro')):
             os.makedirs('macro')
-        with open(folder_name + '/main.json', 'w', encoding='utf-8') as g:
+        with open(global_data.folder_name + '/main.json', 'w', encoding='utf-8') as g:
             json.dump(cookie, g, indent="\t")
 
 
@@ -263,7 +306,8 @@ class Fairy_attack(wx.Dialog):
     def fairy_attack(self):
         attack = Attack()
         attack.attack_url = "http://drugmil.net/2/xgp/pack_bonus14.php?mode=pack1"
-        while True:
+        breaker = '0'
+        while not breaker == '1':
             time.sleep(0.5)
             soup = attack.soup(attack.get_attack())
             p_data = soup.find_all('td')
@@ -271,12 +315,11 @@ class Fairy_attack(wx.Dialog):
             if data == '\n':
                 data = ' 아이템 발견'
             self.attack_list.Append('현재 위치 : ' + data)
-            breaker = '0'
             if data == ' 무너진 고성':
                 self.attack_list.Append('요정 발견!')
                 time.sleep(0.8)
                 attack.attack_url = 'http://drugmil.net/2/xgp/pack_bonus15.php?mode=pack2'
-                while True:
+                while not breaker == '1':
                     y_soup = attack.soup(attack.get_attack())
                     helper = y_soup.find('a', 'button')
                     self.attack_list.Append("요정 공격!")
@@ -284,9 +327,119 @@ class Fairy_attack(wx.Dialog):
                     if 'achatbonus14.php' in helper['href']:
                         self.attack_list.Append("요청 처치 완료")
                         breaker = '1'
-                        break
-            if breaker == '1':
+
+
+class card_pack(wx.Dialog):
+    def __init__(self, parent, id, title):
+        wx.Dialog.__init__(self, parent, id, title, pos=wx.DefaultPosition, size=wx.Size(350, 400))
+        sizer1 = wx.BoxSizer(wx.VERTICAL)
+        self.text_counter = wx.StaticText(self, 1, u"카드팩 이름", wx.DefaultPosition, wx.Size(100, -1), wx.ALIGN_CENTRE)
+        self.text_counter.Wrap(-1)
+        sizer1.Add(self.text_counter, 0, wx.ALL, 5)
+        self.m_textCtrl1 = wx.TextCtrl(self, 2, wx.EmptyString, wx.DefaultPosition, wx.Size(100, -1), 0)
+        sizer1.Add(self.m_textCtrl1, 0, wx.ALL, 5)
+        self.button = wx.Button(self, 3, u"교환", wx.DefaultPosition, wx.Size(100, -1), 0)
+        sizer1.Add(self.button, 0, wx.ALL, 5)
+        self.exchange_list_data = []
+        self.exchange_list = wx.ListBox(self, -1, (130, 5), (200, 350), self.exchange_list_data, wx.LB_SINGLE)
+        self.SetSizer(sizer1)
+        self.Layout()
+        self.Centre(wx.BOTH)
+        self.Bind(wx.EVT_BUTTON, self.thread, id=3)
+        self.count = 0
+
+    def thread(self, event):
+        if self.count == 0:
+            t1 = threading.Thread(target=self.card)
+            t1.setDaemon(True)
+            self.count = 1
+            t1.start()
+        else:
+            dlg = wx.MessageDialog(self, '교환이 이미 진행중입니다', '교환 공격중', wx.OK | wx.ICON_INFORMATION)
+            dlg.ShowModal()
+            dlg.Destroy()
+
+    def card(self):
+        self.card_exchange(str(self.m_textCtrl1.GetValue()))
+        wx.Yield()
+        dlg = wx.MessageDialog(self, '교환 완료!', '교환완료', wx.OK | wx.ICON_INFORMATION)
+        dlg.ShowModal()
+        dlg.Destroy()
+        self.count = 0
+
+    def card_exchange(self, name):
+        doroshi = Attack()
+        doroshi.attack_url = 'http://drugmil.net/2/xgp/pack_bonus21.php?mode=pack2'
+        doroshi.attack_data = {'bc': name}
+        text = ''
+        while not text == '원하는 카드팩 이름과 행동력을 확인해주시기 바랍니다.':
+            p_soup = doroshi.soup(doroshi.post_attack())
+            text = p_soup.find('th', 'errormessage').get_text()
+            if not text == '원하는 카드팩 이름과 행동력을 확인해주시기 바랍니다.':
+                self.exchange_list.Append(text)
+        wx.Yield()
+        time.sleep(0.3)
+
+
+class beetle_macro(wx.Dialog):
+    def __init__(self, parent, id, title):
+        wx.Dialog.__init__(self, parent, id, title, pos=wx.DefaultPosition, size=wx.Size(350, 400))
+        sizer1 = wx.BoxSizer(wx.VERTICAL)
+        self.text_counter = wx.StaticText(self, 1, u"카드 이름", wx.DefaultPosition, wx.Size(100, -1), wx.ALIGN_CENTRE)
+        self.text_counter.Wrap(-1)
+        sizer1.Add(self.text_counter, 0, wx.ALL, 5)
+        self.m_textCtrl1 = wx.TextCtrl(self, 2, wx.EmptyString, wx.DefaultPosition, wx.Size(100, -1), 0)
+        sizer1.Add(self.m_textCtrl1, 0, wx.ALL, 5)
+        self.button = wx.Button(self, 3, u"교환", wx.DefaultPosition, wx.Size(100, -1), 0)
+        self.stopper = wx.Button(self, 4, u"중지", wx.DefaultPosition, wx.Size(100, -1), 0)
+        sizer1.Add(self.button, 0, wx.ALL, 5)
+        sizer1.Add(self.stopper, 0, wx.ALL, 5)
+        self.beetle_list_data = []
+        self.beelte_list = wx.ListBox(self, -1, (130, 5), (200, 350), self.beetle_list_data, wx.LB_SINGLE)
+        self.SetSizer(sizer1)
+        self.Layout()
+        self.Centre(wx.BOTH)
+        self.Bind(wx.EVT_BUTTON, self.thread, id=3)
+        self.count = 0
+        self.Bind(wx.EVT_BUTTON, self.stop, id=4)
+
+    def thread(self, event):
+        if self.count == 0:
+            self.t1 = threading.Thread(target=self.exchange)
+            self.t1.setDaemon(True)
+            self.count = 1
+            self.t1.start()
+        else:
+            dlg = wx.MessageDialog(self, '교환이 이미 진행중입니다', '교환 공격중', wx.OK | wx.ICON_INFORMATION)
+            dlg.ShowModal()
+            dlg.Destroy()
+
+    def exchange(self):
+        self.beetle_exchange(str(self.m_textCtrl1.GetValue()))
+        wx.Yield()
+        dlg = wx.MessageDialog(self, '교환 완료!', '교환완료', wx.OK | wx.ICON_INFORMATION)
+        dlg.ShowModal()
+        dlg.Destroy()
+        self.count = 0
+
+    def beetle_exchange(self, name):
+        beetle = Attack()
+        beetle.attack_url = "http://drugmil.net/2/xgp/pack_bonus17.php?mode=pack1000"
+        beetle.attack_data = {'bc': name}
+        answer = ''
+        while not ('만능풍뎅이' in answer or '최대 레벨' in answer):
+            soup = beetle.soup(beetle.post_attack())
+            answer = soup.find('th', 'errormessage').get_text()
+            if not ('만능풍뎅이' in answer or '최대 레벨' in answer):
+                self.beelte_list.Append(answer)
+            wx.Yield()
+            time.sleep(0.4)
+            if self.count != 1:
                 break
+
+    def stop(self, event):
+        self.count = 0
+
 
 
 class build(wx.Dialog):
@@ -294,16 +447,16 @@ class build(wx.Dialog):
         wx.Dialog.__init__(self, parent, id, title, pos=wx.DefaultPosition, size=wx.Size(650, 350))
         wx.StaticText(self, id=1, label='건설 행성', pos=(35, 10))
         a_list, p_list = [], []
-        if os.path.isfile(folder_name + '/main.json'):
-            a_list = get_list()
+        if os.path.isfile(global_data.folder_name + '/main.json'):
+            a_list = get_data().get_list()
             for i in a_list:
                 if '(묘지)' not in i:
                     p_list.append(i)
         self.box = wx.ComboBox(self, id=2, pos=(10, 32), size=(140, 22), choices=p_list)
         self.choose_number = 0
-        self.n = number_list[self.choose_number]
+        self.n = global_data.number_list()
         data = Attack()
-        data.attack_url = "http://drugmil.net/2/xgp/game.php?page=buildings&" + self.n
+        data.attack_url = "http://drugmil.net/2/xgp/game.php?page=buildings&" + self.n[self.choose_number]
         soup = data.soup(data.get_attack())
         red = soup.find_all('fieldset')
 
@@ -330,6 +483,7 @@ class build(wx.Dialog):
         self.corn = wx.StaticText(self, id=8, label=format(self.have_resource[2], ','), pos=(190, 80))
         wx.StaticText(self, id=9, label=u'은행 옥수수', pos=(280, 60))
         self.bank_corn = wx.StaticText(self, id=10, label=format(bank_account, ','), pos=(280, 80))
+        self.deposit_button = wx.Button(self, id=11, label=u"자원 전체\n 입금", pos=(370, 60), size=(60, 40))
 
         wx.StaticText(self, id=101, label=u'홍차밭 요구사항', pos=(5, 160))
         self.make_black_tea_1 = wx.StaticText(self, id=102, label=format(black[0], ','), pos=(5, 180))
@@ -402,6 +556,7 @@ class build(wx.Dialog):
         self.Bind(wx.EVT_BUTTON, self.build_black, id=1001)
         self.Bind(wx.EVT_BUTTON, self.build_green, id=1002)
         self.Bind(wx.EVT_BUTTON, self.build_corn, id=1003)
+        self.Bind(wx.EVT_BUTTON, self.deposit, id=11)
 
     def set_planet(self, event):
         self.choose_number = self.box.GetSelection()
@@ -409,9 +564,9 @@ class build(wx.Dialog):
         wx.Yield()
 
     def show_resource(self):
-        self.n = number_list[self.choose_number]
+        self.n = global_data.number_list()
         data = Attack()
-        data.attack_url = "http://drugmil.net/2/xgp/game.php?page=buildings&" + self.n
+        data.attack_url = "http://drugmil.net/2/xgp/game.php?page=buildings&" + self.n[self.choose_number]
         soup = data.soup(data.get_attack())
         red = soup.find_all('fieldset')
 
@@ -484,7 +639,7 @@ class build(wx.Dialog):
         else:
             self.exchange(self.if_black_tea_1.GetLabel(), self.if_black_tea_2.GetLabel())
             build_black = Attack()
-            build_black.attack_url = 'http://drugmil.net/2/xgp/game.php?page=buildings&cmd=insert&building=1&' + self.n
+            build_black.attack_url = 'http://drugmil.net/2/xgp/game.php?page=buildings&cmd=insert&building=1&' + self.n[self.choose_number]
             build_black.get_attack()
             dlg = wx.MessageDialog(self, '건설하였습니다..', '건설', wx.OK | wx.ICON_INFORMATION)
             dlg.ShowModal()
@@ -498,7 +653,7 @@ class build(wx.Dialog):
         else:
             self.exchange(self.if_green_tea_1.GetLabel(), self.if_green_tea_2.GetLabel())
             build_green = Attack()
-            build_green.attack_url = 'http://drugmil.net/2/xgp/game.php?page=buildings&cmd=insert&building=2&' + self.n
+            build_green.attack_url = 'http://drugmil.net/2/xgp/game.php?page=buildings&cmd=insert&building=2&' + self.n[self.choose_number]
             build_green.get_attack()
             dlg = wx.MessageDialog(self, '건설하였습니다..', '건설', wx.OK | wx.ICON_INFORMATION)
             dlg.ShowModal()
@@ -512,11 +667,19 @@ class build(wx.Dialog):
         else:
             self.exchange(self.if_corn_1.GetLabel(), self.if_corn_2.GetLabel())
             build_corn = Attack()
-            build_corn.attack_url = 'http://drugmil.net/2/xgp/game.php?page=buildings&cmd=insert&building=3&' + self.n
+            build_corn.attack_url = 'http://drugmil.net/2/xgp/game.php?page=buildings&cmd=insert&building=3&' + self.n[self.choose_number]
             build_corn.get_attack()
             dlg = wx.MessageDialog(self, '건설하였습니다..', '건설', wx.OK | wx.ICON_INFORMATION)
             dlg.ShowModal()
             dlg.Destroy()
+
+    def deposit(self, event):
+        bank = Attack()
+        bank.attack_url = 'http://drugmil.net/2/xgp/bank_bonus.php?mode=pack79&' + self.n[self.choose_number]
+        message = bank.soup(bank.get_attack()).find('th', 'errormessage').get_text()
+        dlg = wx.MessageDialog(self, message, '자원 입금', wx.OK | wx.ICON_INFORMATION)
+        dlg.ShowModal()
+        dlg.Destroy()
 
     def exchange(self, label1, label2):
         if label1 == '가능':
@@ -549,7 +712,6 @@ class Menu(wx.Frame):
         help_bar.Append(104, '&정보', '약괴밀 메크로 정보')
         convenience_bar.Append(107, '출석체크', '약괴밀 출석체크')
         convenience_bar.Append(108, '요정 메크로', '원하는 만큼 요정을 잡습니다')
-        convenience_bar.Append(109, '행동력 교환', '수확부터 행동력 교환까지')
         convenience_bar.Append(110, '카드팩 구매', '행동력으로 카드팩을 구매합니다')
         convenience_bar.Append(111, '만능풍뎅이 사용', '만능풍뎅이로 카드를 레벨업합니다.')
         convenience_bar.Append(112, '건설 도우미', '건물 건설에 필요한 기능들이 있습니다.')
@@ -562,8 +724,8 @@ class Menu(wx.Frame):
 
         wx.StaticText(self.panel, id=201, label='출발 행성', pos=(35, 10))
         p_list = []
-        if os.path.isfile(folder_name + '/main.json'):
-            p_list = get_list()
+        if os.path.isfile(global_data.folder_name + '/main.json'):
+            p_list = get_data().get_list()
         self.box = wx.ComboBox(self.panel, id=202, pos=(10, 32), size=(140, 22), choices=p_list)
 
         wx.StaticText(self.panel, id=211, label='목표 행성', pos=(45, 60))
@@ -579,7 +741,7 @@ class Menu(wx.Frame):
 
         wx.Button(self.panel, id=219, label="전체 공격", pos=(150, 312), size=(100, 100))
 
-        file_list = get_filename()
+        file_list = get_data().get_filename()
         self.listBox = wx.ListBox(self.panel, -1, (10, 120), (130, 510), file_list, wx.LB_SINGLE)
         self.attack_list = wx.ListBox(self.panel, -1, (280, 30), (150, 600), file_list, wx.LB_SINGLE)
         self.attack_list.Clear()
@@ -604,6 +766,8 @@ class Menu(wx.Frame):
         self.Bind(wx.EVT_MENU, self.open_dir, id=105)
         self.Bind(wx.EVT_MENU, self.attend, id=107)
         self.Bind(wx.EVT_MENU, self.show_fairy, id=108)
+        self.Bind(wx.EVT_MENU, self.exchange_card, id=110)
+        self.Bind(wx.EVT_MENU, self.exchange_beetle, id=111)
         self.Bind(wx.EVT_MENU, self.build_menu, id=112)  # 건물도우미
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
@@ -611,12 +775,34 @@ class Menu(wx.Frame):
         self.Close()
 
     def build_menu(self, event):
-        if not os.path.isfile(folder_name + '/main.json'):
+        if not os.path.isfile(global_data.folder_name + '/main.json'):
             dlg = wx.MessageDialog(self, '메인 - 로그인으로 로그인먼저 해야합니다.', '로그인 필요', wx.OK | wx.ICON_INFORMATION)
             dlg.ShowModal()
             dlg.Destroy()
         else:
             dia1 = build(self, -1, '건물 건설 도우미')
+            dia1.ShowModal()
+            dia1.Destroy()
+            wx.Yield()
+
+    def exchange_card(self, event):
+        if not os.path.isfile(global_data.folder_name + '/main.json'):
+            dlg = wx.MessageDialog(self, '메인 - 로그인으로 로그인먼저 해야합니다.', '로그인 필요', wx.OK | wx.ICON_INFORMATION)
+            dlg.ShowModal()
+            dlg.Destroy()
+        else:
+            dia1 = card_pack(self, -1, '카드팩 매크로')
+            dia1.ShowModal()
+            dia1.Destroy()
+            wx.Yield()
+
+    def exchange_beetle(self, event):
+        if not os.path.isfile(global_data.folder_name + '/main.json'):
+            dlg = wx.MessageDialog(self, '메인 - 로그인으로 로그인먼저 해야합니다.', '로그인 필요', wx.OK | wx.ICON_INFORMATION)
+            dlg.ShowModal()
+            dlg.Destroy()
+        else:
+            dia1 = beetle_macro(self, -1, '만풍교환 매크로')
             dia1.ShowModal()
             dia1.Destroy()
             wx.Yield()
@@ -631,17 +817,16 @@ class Menu(wx.Frame):
         dlg.Destroy()
 
     def open_dir(self, event):
-        global folder_name
         open_dlg = wx.DirDialog(self, "macro 폴더 선택")
         if open_dlg.ShowModal() == wx.ID_OK:
-            folder_name = open_dlg.GetPath()
+            global_data.change_folder_name(open_dlg.GetPath())
             self.attack_list.Clear()
             self.listBox.Clear()
-            file_list = get_filename()
+            file_list = get_data().get_filename()
             self.listBox.AppendItems(file_list)
 
     def show_custom_dialog(self, event):
-        if not os.path.isfile(folder_name + '/main.json'):
+        if not os.path.isfile(global_data.folder_name + '/main.json'):
             dia = Dialog(self, -1, '로그인')
             dia.ShowModal()
             dia.Destroy()
@@ -652,7 +837,7 @@ class Menu(wx.Frame):
             dlg.Destroy()
 
     def show_fairy(self, event):
-        if not os.path.isfile(folder_name + '/main.json'):
+        if not os.path.isfile(global_data.folder_name + '/main.json'):
             dlg = wx.MessageDialog(self, '메인 - 로그인으로 로그인먼저 해야합니다.', '로그인 필요', wx.OK | wx.ICON_INFORMATION)
             dlg.ShowModal()
             dlg.Destroy()
@@ -663,7 +848,7 @@ class Menu(wx.Frame):
             wx.Yield()
 
     def show_data_dialog(self, event):
-        if not os.path.isfile(folder_name + '/data.json'):
+        if not os.path.isfile(global_data.folder_name + '/data.json'):
             dia1 = Dialog1(self, -1, '데이터 작성')
             dia1.ShowModal()
             dia1.Destroy()
@@ -674,17 +859,16 @@ class Menu(wx.Frame):
             dlg.Destroy()
 
     def make_macro(self, event):
-        if not os.path.isfile(folder_name + '/main.json'):
+        if not os.path.isfile(global_data.folder_name + '/main.json'):
             dlg = wx.MessageDialog(self, '메인 - 로그인으로 로그인먼저 해야합니다.', '로그인 필요', wx.OK | wx.ICON_INFORMATION)
             dlg.ShowModal()
             dlg.Destroy()
-        elif not os.path.isfile(folder_name + '/data.json'):
+        elif not os.path.isfile(global_data.folder_name + '/data.json'):
             dlg = wx.MessageDialog(self, '메인 - 데이터작성 으로 데이터 작성먼저 해야합니다.', '데이터 작성 필요', wx.OK | wx.ICON_INFORMATION)
             dlg.ShowModal()
             dlg.Destroy()
         else:
-            handler = choose
-            helper = re.split('\xa0', str(handler))
+            helper = re.split('\xa0', str(global_data.choose))
             tee = helper[1][1:-1]
             end = re.split(':', str(tee))
             galaxy = str(end[0])
@@ -693,23 +877,23 @@ class Menu(wx.Frame):
             galaxy_end = str(self.input_galaxy_end.GetValue())
             system_end = str(self.input_system_end.GetValue())
             planet_end = str(self.input_planet_end.GetValue())
-            if not os.path.isfile(folder_name + '/cus_usedfleet.json'):
-                get_usedfleet(galaxy, system, planet, galaxy_end, system_end, planet_end)
-            with open(folder_name + '/data.json') as json_file3:
+            if not os.path.isfile(global_data.folder_name + '/cus_usedfleet.json'):
+                get_data().get_usedfleet(galaxy, system, planet, galaxy_end, system_end, planet_end)
+            with open(global_data.folder_name + '/data.json') as json_file3:
                 temp = json.load(json_file3)
             temp1 = list(temp.keys())
             temp2 = list(temp.values())
-            if choice == 0:
-                with open(folder_name + '/div_usedfleet.json') as json_file1:
+            if global_data.choice == 0:
+                with open(global_data.folder_name + '/div_usedfleet.json') as json_file1:
                     usedfleet = json.load(json_file1)
                 usedfleet[temp1[0]] = temp2[0]
-            elif choice == 1:
-                with open(folder_name + '/cus_usedfleet.json') as json_file2:
+            elif global_data.choice == 1:
+                with open(global_data.folder_name + '/cus_usedfleet.json') as json_file2:
                     usedfleet = json.load(json_file2)
                 usedfleet[temp1[0]] = temp2[0]
                 usedfleet[temp1[1]] = temp2[1]
             temp3 = {'thisplanettype': '1'}
-            if planet_type == 1:
+            if global_data.planet_type == 1:
                 temp3['thisplanettype'] = '3'
 
             data = {'thisgalaxy': galaxy, 'thissystem': system, 'thisplanet': planet, 'galaxy': galaxy_end,
@@ -719,48 +903,44 @@ class Menu(wx.Frame):
             data.update(temp3)
             add_file = galaxy_end + '_' + system_end + '_' + planet_end
             add_list = add_file + '.json'
-            with open(folder_name + '/' + add_list, 'w', encoding='utf-8') as make_file:
+            with open(global_data.folder_name + '/' + add_list, 'w', encoding='utf-8') as make_file:
                 json.dump(data, make_file, indent="\t")
             self.listBox.Append(add_list)
             wx.Yield()
 
     def set_div(self, event):
-        global choice
-        choice = self.choice.GetSelection()
+        global_data.change_choice(self.choice.GetSelection())
 
     def set_type(self, event):
-        global planet_type
-        planet_type = self.planet_choice.GetSelection()
+        global_data.change_planet_type(self.planet_choice.GetSelection())
 
     def thread(self, event):
-        global counter
-        if counter == 0:
+        if global_data.counter == 0:
             t = threading.Thread(target=self.attack)
             t.setDaemon(True)
             t.start()
-            counter = 1
+            global_data.change_counter(1)
         else:
             dlg = wx.MessageDialog(self, '이미 공격이 진행중입니다.', '공격 진행중', wx.OK | wx.ICON_INFORMATION)
             dlg.ShowModal()
             dlg.Destroy()
 
     def attack(self):
-        global counter
-        attack_list = get_filename()
-        if not os.path.isfile(folder_name + '/main.json'):
+        attack_list = get_data().get_filename()
+        if not os.path.isfile(global_data.folder_name + '/main.json'):
             dlg = wx.MessageDialog(self, '메인 - 로그인으로 로그인먼저 해야합니다.', '로그인 필요', wx.OK | wx.ICON_INFORMATION)
             dlg.ShowModal()
-            counter = 0
+            global_data.change_counter(0)
             dlg.Destroy()
-        elif not os.path.isfile(folder_name + '/data.json'):
+        elif not os.path.isfile(global_data.folder_name + '/data.json'):
             dlg = wx.MessageDialog(self, '메인 - 데이터작성 으로 데이터 작성먼저 해야합니다.', '데이터 작성 필요', wx.OK | wx.ICON_INFORMATION)
             dlg.ShowModal()
-            counter = 0
+            global_data.change_counter(0)
             dlg.Destroy()
         elif not attack_list:
             dlg = wx.MessageDialog(self, '공격 데이터가 없습니다', '공격 데이터 작성 필요', wx.OK | wx.ICON_INFORMATION)
             dlg.ShowModal()
-            counter = 0
+            global_data.change_counter(0)
             dlg.Destroy()
         else:
             counter = len(attack_list)
@@ -770,26 +950,26 @@ class Menu(wx.Frame):
                 counter -= 1
             dlg = wx.MessageDialog(self, '모든 목표를 공격했습니다', '공격 완료', wx.OK | wx.ICON_INFORMATION)
             dlg.ShowModal()
-            counter = 0
+            global_data.change_counter(0)
             dlg.Destroy()
 
     def all_attack(self, point):
         attack = Attack()
-        with open(folder_name + '/' + point) as json_file1:
+        with open(global_data.folder_name + '/' + point) as json_file1:
             json_data1 = json.load(json_file1)
         temp = json_data1['thisgalaxy'] + ':' + json_data1['thissystem'] + ':' + json_data1['thisplanet']
         attack_counter = 0
-        attack_list = get_list()
-        h_data = get_planet_number()
+        attack_list = get_data().get_list()
+        h_data = get_data().get_planet_number()
         n = ''
         while attack_counter < len(h_data):
             if temp in attack_list[attack_counter]:
                 if json_data1['thisplanettype'] == '3' and str('(묘지)') in attack_list[attack_counter]:
-                    n = str(number_list[attack_counter])
+                    n = str(global_data.number_list()[attack_counter])
                     break
                 else:
                     if not str('(묘지)') in attack_list[attack_counter]:
-                        n = str(number_list[attack_counter])
+                        n = str(global_data.number_list()[attack_counter])
                         break
             attack_counter += 1
         attack.attack_url = "http://drugmil.net/2/xgp/game.php?page=fleet3&" + n
@@ -800,12 +980,11 @@ class Menu(wx.Frame):
             self.attack_list.Append(viewer + '는 공격하지 못했습니다.')
         else:
             self.attack_list.Append(viewer + '를 공격했습니다.')
-        time.sleep(1.5)
+        time.sleep(1.0)
 
     def set_planet(self, event):
-        global choose, choose_number
-        choose = self.box.GetStringSelection()
-        choose_number = self.box.GetSelection()
+        global_data.change_choose(self.box.GetStringSelection())
+        global_data.change_choose_number(self.box.GetSelection())
 
     def ifo(self, event):
         dlg = wx.MessageDialog(self, '약괴밀 메크로 버전 3.1.1\n'
@@ -814,7 +993,8 @@ class Menu(wx.Frame):
                                      '3.1.3 : 묘지관련 추가 오류 수정\n'
                                      '3.2 : 쓰레드 기능 구현  3.3 : 약괴밀 화면기능 추가\n'
                                      '3.3.1 : macro폴더 선택기능 추가  3.3.2 : 쓰레드 관련 오류 수정'
-                                     '3.4 : 약괴밀 화면기능 삭제, 편의기능 추가'
+                                     '3.4 : 약괴밀 화면기능 삭제, 편의기능 추가\n'
+                                     '3.5 : 편의기능 여러개 추가'
                                      '\n제작자 : 마리사라', '정보', wx.OK | wx.ICON_INFORMATION)
         dlg.ShowModal()
         dlg.Destroy()
