@@ -6,6 +6,7 @@ import os
 from bs4 import BeautifulSoup
 import time
 import threading
+import sys
 
 
 class Database:
@@ -24,7 +25,7 @@ class Database:
 class Global_data:
     def __init__(self):
         self.choice = 0
-        self.planet_type = 0
+        self.planet_type_data = 0
         self.choose = []
         self.choose_number = 0
         self.counter = 0
@@ -44,10 +45,10 @@ class Global_data:
         self.folder_name = name
 
     def planet_type(self):
-        return self.planet_type
+        return self.planet_type_data
 
     def change_planet_type(self, data):
-        self.planet_type = data
+        self.planet_type_data = data
 
     def choice(self):
         return self.choice
@@ -96,14 +97,20 @@ class Attack:
         return requests.post(url=self.attack_url, cookies=Database().cookies(), headers=Database().header(),
                              data=self.attack_data, allow_redirects=False, timeout=30)
 
+    def login_attack(self):
+        return requests.post(url=self.attack_url, headers=Database().header(),
+                             data=self.attack_data, allow_redirects=False, timeout=30)
+
     def soup(self, attack):
         html = attack.content
         soup = BeautifulSoup(html, 'html.parser')
         return soup
 
 
-class get_data:
+class Get_data:
     def __init__(self):
+        if not os.path.isdir(global_data.folder_name):
+            os.mkdir(global_data.folder_name)
         self.file_name = os.listdir(global_data.folder_name)
         self.answer_list = []
 
@@ -171,6 +178,12 @@ class get_data:
         soup = get.soup(get.get_attack())
         h_data = soup.find_all('option')
         return h_data
+
+    def answer(self):
+        return self.answer_list
+
+
+get_data = Get_data()
 
 
 class Dialog1(wx.Dialog):
@@ -248,7 +261,7 @@ class Dialog(wx.Dialog):
         login = Attack()
         login.attack_url = 'http://drugmil.net/2/xgp/index.php'
         login.attack_data = {'username': ids, 'password': password, 'submit': '로그인'}
-        res = login.post_attack()
+        res = login.login_attack()
         t = res.headers.get('Set-cookie')
         t = re.split('[=;]', t)
         name = '\354\225\275\352\264\264\353\260\200'
@@ -441,14 +454,13 @@ class beetle_macro(wx.Dialog):
         self.count = 0
 
 
-
 class build(wx.Dialog):
     def __init__(self, parent, id, title):
         wx.Dialog.__init__(self, parent, id, title, pos=wx.DefaultPosition, size=wx.Size(650, 350))
         wx.StaticText(self, id=1, label='건설 행성', pos=(35, 10))
         a_list, p_list = [], []
         if os.path.isfile(global_data.folder_name + '/main.json'):
-            a_list = get_data().get_list()
+            a_list = get_data.answer()
             for i in a_list:
                 if '(묘지)' not in i:
                     p_list.append(i)
@@ -564,9 +576,15 @@ class build(wx.Dialog):
         wx.Yield()
 
     def show_resource(self):
-        self.n = global_data.number_list()
+        planet_list = get_data.answer()
+        count = 0
+        self.new_number = []
+        for i in planet_list:
+            if '(묘지)' not in i:
+                self.new_number.append(self.n[count])
+            count += 1
         data = Attack()
-        data.attack_url = "http://drugmil.net/2/xgp/game.php?page=buildings&" + self.n[self.choose_number]
+        data.attack_url = "http://drugmil.net/2/xgp/game.php?page=buildings&" + self.new_number[self.choose_number]
         soup = data.soup(data.get_attack())
         red = soup.find_all('fieldset')
 
@@ -639,7 +657,7 @@ class build(wx.Dialog):
         else:
             self.exchange(self.if_black_tea_1.GetLabel(), self.if_black_tea_2.GetLabel())
             build_black = Attack()
-            build_black.attack_url = 'http://drugmil.net/2/xgp/game.php?page=buildings&cmd=insert&building=1&' + self.n[self.choose_number]
+            build_black.attack_url = 'http://drugmil.net/2/xgp/game.php?page=buildings&cmd=insert&building=1&' + self.new_number[self.choose_number]
             build_black.get_attack()
             dlg = wx.MessageDialog(self, '건설하였습니다..', '건설', wx.OK | wx.ICON_INFORMATION)
             dlg.ShowModal()
@@ -653,7 +671,7 @@ class build(wx.Dialog):
         else:
             self.exchange(self.if_green_tea_1.GetLabel(), self.if_green_tea_2.GetLabel())
             build_green = Attack()
-            build_green.attack_url = 'http://drugmil.net/2/xgp/game.php?page=buildings&cmd=insert&building=2&' + self.n[self.choose_number]
+            build_green.attack_url = 'http://drugmil.net/2/xgp/game.php?page=buildings&cmd=insert&building=2&' + self.new_number[self.choose_number]
             build_green.get_attack()
             dlg = wx.MessageDialog(self, '건설하였습니다..', '건설', wx.OK | wx.ICON_INFORMATION)
             dlg.ShowModal()
@@ -667,7 +685,7 @@ class build(wx.Dialog):
         else:
             self.exchange(self.if_corn_1.GetLabel(), self.if_corn_2.GetLabel())
             build_corn = Attack()
-            build_corn.attack_url = 'http://drugmil.net/2/xgp/game.php?page=buildings&cmd=insert&building=3&' + self.n[self.choose_number]
+            build_corn.attack_url = 'http://drugmil.net/2/xgp/game.php?page=buildings&cmd=insert&building=3&' + self.new_number[self.choose_number]
             build_corn.get_attack()
             dlg = wx.MessageDialog(self, '건설하였습니다..', '건설', wx.OK | wx.ICON_INFORMATION)
             dlg.ShowModal()
@@ -675,7 +693,7 @@ class build(wx.Dialog):
 
     def deposit(self, event):
         bank = Attack()
-        bank.attack_url = 'http://drugmil.net/2/xgp/bank_bonus.php?mode=pack79&' + self.n[self.choose_number]
+        bank.attack_url = 'http://drugmil.net/2/xgp/bank_bonus.php?mode=pack79&' + self.new_number[self.choose_number]
         message = bank.soup(bank.get_attack()).find('th', 'errormessage').get_text()
         dlg = wx.MessageDialog(self, message, '자원 입금', wx.OK | wx.ICON_INFORMATION)
         dlg.ShowModal()
@@ -725,7 +743,7 @@ class Menu(wx.Frame):
         wx.StaticText(self.panel, id=201, label='출발 행성', pos=(35, 10))
         p_list = []
         if os.path.isfile(global_data.folder_name + '/main.json'):
-            p_list = get_data().get_list()
+            p_list = get_data.get_list()
         self.box = wx.ComboBox(self.panel, id=202, pos=(10, 32), size=(140, 22), choices=p_list)
 
         wx.StaticText(self.panel, id=211, label='목표 행성', pos=(45, 60))
@@ -741,7 +759,7 @@ class Menu(wx.Frame):
 
         wx.Button(self.panel, id=219, label="전체 공격", pos=(150, 312), size=(100, 100))
 
-        file_list = get_data().get_filename()
+        file_list = get_data.get_filename()
         self.listBox = wx.ListBox(self.panel, -1, (10, 120), (130, 510), file_list, wx.LB_SINGLE)
         self.attack_list = wx.ListBox(self.panel, -1, (280, 30), (150, 600), file_list, wx.LB_SINGLE)
         self.attack_list.Clear()
@@ -822,7 +840,7 @@ class Menu(wx.Frame):
             global_data.change_folder_name(open_dlg.GetPath())
             self.attack_list.Clear()
             self.listBox.Clear()
-            file_list = get_data().get_filename()
+            file_list = get_data.get_filename()
             self.listBox.AppendItems(file_list)
 
     def show_custom_dialog(self, event):
@@ -878,7 +896,7 @@ class Menu(wx.Frame):
             system_end = str(self.input_system_end.GetValue())
             planet_end = str(self.input_planet_end.GetValue())
             if not os.path.isfile(global_data.folder_name + '/cus_usedfleet.json'):
-                get_data().get_usedfleet(galaxy, system, planet, galaxy_end, system_end, planet_end)
+                get_data.get_usedfleet(galaxy, system, planet, galaxy_end, system_end, planet_end)
             with open(global_data.folder_name + '/data.json') as json_file3:
                 temp = json.load(json_file3)
             temp1 = list(temp.keys())
@@ -926,7 +944,7 @@ class Menu(wx.Frame):
             dlg.Destroy()
 
     def attack(self):
-        attack_list = get_data().get_filename()
+        attack_list = get_data.get_filename()
         if not os.path.isfile(global_data.folder_name + '/main.json'):
             dlg = wx.MessageDialog(self, '메인 - 로그인으로 로그인먼저 해야합니다.', '로그인 필요', wx.OK | wx.ICON_INFORMATION)
             dlg.ShowModal()
@@ -959,8 +977,8 @@ class Menu(wx.Frame):
             json_data1 = json.load(json_file1)
         temp = json_data1['thisgalaxy'] + ':' + json_data1['thissystem'] + ':' + json_data1['thisplanet']
         attack_counter = 0
-        attack_list = get_data().get_list()
-        h_data = get_data().get_planet_number()
+        attack_list = get_data.answer()
+        h_data = get_data.get_planet_number()
         n = ''
         while attack_counter < len(h_data):
             if temp in attack_list[attack_counter]:
@@ -1000,12 +1018,12 @@ class Menu(wx.Frame):
         dlg.Destroy()
 
     def OnClose(self, event):
-        quit(0)
+        sys.exit()
 
 
 class MyApp(wx.App):
     def OnInit(self):
-        frame = Menu(None, -1, '약괴밀 메크로 3.4')
+        frame = Menu(None, -1, '약괴밀 메크로 3.5')
         frame.Show(True)
         frame.Centre()
         return True
