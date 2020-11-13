@@ -342,6 +342,98 @@ class Fairy_attack(wx.Dialog):
                         breaker = '1'
 
 
+class Enemy_attack(wx.Dialog):
+    def __init__(self, parent, id, title):
+        wx.Dialog.__init__(self, parent, id, title, pos=wx.DefaultPosition, size=wx.Size(300, 400))
+        sizer1 = wx.BoxSizer(wx.VERTICAL)
+        self.text_counter = wx.StaticText(self, 1, u"원하는 강적 수", wx.DefaultPosition, wx.Size(100, -1), wx.ALIGN_CENTRE)
+        self.text_counter.Wrap(-1)
+        sizer1.Add(self.text_counter, 0, wx.ALL, 5)
+        self.m_textCtrl1 = wx.TextCtrl(self, 2, wx.EmptyString, wx.DefaultPosition, wx.Size(100, -1), 0)
+        sizer1.Add(self.m_textCtrl1, 0, wx.ALL, 5)
+        self.button = wx.Button(self, 3, u"공격", wx.DefaultPosition, wx.Size(100, -1), 0)
+        sizer1.Add(self.button, 0, wx.ALL, 5)
+        self.stop = wx.Button(self, 4, u"중지", wx.DefaultPosition, wx.Size(100, -1), 0)
+        sizer1.Add(self.stop, 0, wx.ALL, 5)
+        self.attack_list_data = []
+        self.attack_list = wx.ListBox(self, -1, (130, 5), (150, 350), self.attack_list_data, wx.LB_SINGLE)
+        self.SetSizer(sizer1)
+        self.Layout()
+        self.Centre(wx.BOTH)
+        self.Bind(wx.EVT_BUTTON, self.thread, id=3)
+        self.Bind(wx.EVT_BUTTON, self.stopper, id=4)
+        self.count = 0
+
+    def thread(self, event):
+        if self.count == 0:
+            self.t1 = threading.Thread(target=self.attack_counter)
+            self.t1.setDaemon(True)
+            self.count = 1
+            self.t1.start()
+        else:
+            dlg = wx.MessageDialog(self, '이미 요정 강적중입니다', '강적 공격중', wx.OK | wx.ICON_INFORMATION)
+            dlg.ShowModal()
+            dlg.Destroy()
+
+    def attack_counter(self):
+        self.enemy_counter = int(self.m_textCtrl1.GetValue())
+        while self.enemy_counter != 0:
+            self.attacker()
+            wx.Yield()
+            self.enemy_counter -= 1
+            if self.count == 0:
+                break
+        dlg = wx.MessageDialog(self, '공격 완료!', '공격완료', wx.OK | wx.ICON_INFORMATION)
+        dlg.ShowModal()
+        dlg.Destroy()
+        self.count = 0
+
+    def attacker(self):
+        attack = Attack()
+        attack.attack_url = "http://drugmil.net/2/xgp/pack_bonus14.php?mode=pack1"
+        breaker = '0'
+        search_counter = 8
+        while not breaker == '1':
+            time.sleep(0.5)
+            soup = attack.soup(attack.get_attack())
+            p_data = soup.find_all('td')
+            data = p_data[0].get_text()
+            if not data == ' 미로의 초원':
+                if data == '\n':
+                    data = ' 아이템 발견'
+                self.attack_list.Append('현재 위치 : ' + data)
+                search_counter -= 1
+            if search_counter == 0:
+                self.attack_list.Append('이미 나왔는지 점검중')
+                time.sleep(0.3)
+                search = Attack()
+                search.attack_url = 'http://drugmil.net/2/xgp/achatbonus15.php'
+                p_soup = search.soup(search.get_attack())
+                phelper = p_soup.find_all('td', 'c')
+                plier = phelper[2].get_text()
+                if not plier[-4:-1] == '미출현':
+                    data = ' 미로의 초원'
+                search_counter = 8
+            if data == ' 미로의 초원':
+                self.attack_list.Append('강적 발견!')
+                time.sleep(0.5)
+                attack.attack_url = 'http://drugmil.net/2/xgp/pack_bonus15.php?mode=pack1'
+                while not breaker == '1':
+                    y_soup = attack.soup(attack.get_attack())
+                    helper = y_soup.find('a', 'button')
+                    self.attack_list.Append("강적 공격!")
+                    time.sleep(0.5)
+                    if 'achatbonus14.php' in helper['href']:
+                        self.attack_list.Append("강적 처치 완료")
+                        breaker = '1'
+            if self.count == 0:
+                break
+
+    def stopper(self, event):
+        self.enemy_counter = 0
+        self.count = 0
+
+
 class card_pack(wx.Dialog):
     def __init__(self, parent, id, title):
         wx.Dialog.__init__(self, parent, id, title, pos=wx.DefaultPosition, size=wx.Size(350, 400))
@@ -456,7 +548,7 @@ class beetle_macro(wx.Dialog):
 
 class build(wx.Dialog):
     def __init__(self, parent, id, title):
-        wx.Dialog.__init__(self, parent, id, title, pos=wx.DefaultPosition, size=wx.Size(650, 350))
+        wx.Dialog.__init__(self, parent, id, title, pos=wx.DefaultPosition, size=wx.Size(800, 350))
         wx.StaticText(self, id=1, label='건설 행성', pos=(35, 10))
         a_list, p_list = [], []
         if os.path.isfile(global_data.folder_name + '/main.json'):
@@ -556,10 +648,29 @@ class build(wx.Dialog):
             self.if_exchange_corn_1 = wx.StaticText(self, id=306, label=u'가능', pos=(400, 280))
         else:
             self.if_exchange_corn_1 = wx.StaticText(self, id=306, label=u'불가능', pos=(400, 280))
+        self.have_corn = self.have_resource[0] / 4 + self.have_resource[1] / 2 + self.have_resource[2]
+        wx.StaticText(self, id=401, label=u'은행으로 가능 여부', pos=(550, 160))
+        if self.have_corn + bank_account >= black[0] / 4 + black[1] / 2:
+            self.if_withdrawal_black_1 = wx.StaticText(self, id=402, label=u'가능', pos=(550, 180))
+        else:
+            self.if_withdrawal_black_1 = wx.StaticText(self, id=402, label=u'불가능', pos=(550, 180))
+        wx.StaticText(self, id=403, label=u'은행으로 가능 여부', pos=(550, 210))
+        if self.have_corn + bank_account >= green[0] / 4 + green[1] / 2:
+            self.if_withdrawal_green_1 = wx.StaticText(self, id=404, label=u'가능', pos=(550, 230))
+        else:
+            self.if_withdrawal_green_1 = wx.StaticText(self, id=404, label=u'불가능', pos=(550, 230))
+        wx.StaticText(self, id=405, label=u'은행으로 가능 여부', pos=(550, 260))
+        if self.have_corn + bank_account >= corn[0] / 4 + corn[1] / 2:
+            self.if_withdrawal_corn_1 = wx.StaticText(self, id=406, label=u'가능', pos=(550, 280))
+        else:
+            self.if_withdrawal_corn_1 = wx.StaticText(self, id=406, label=u'불가능', pos=(550, 280))
 
-        self.build_black_button = wx.Button(self, id=1001, label=u"건설", pos=(550, 155), size=(50, 30))
-        self.build_green_button = wx.Button(self, id=1002, label=u"건설", pos=(550, 210), size=(50, 30))
-        self.build_corn_button = wx.Button(self, id=1003, label=u"건설", pos=(550, 260), size=(50, 30))
+        self.build_black_button = wx.Button(self, id=1001, label=u"건설", pos=(660, 155), size=(50, 30))
+        self.bank_black_button = wx.Button(self, id=10001, label=u"은행\n건설", pos=(720, 155), size=(50, 30))
+        self.build_green_button = wx.Button(self, id=1002, label=u"건설", pos=(660, 210), size=(50, 30))
+        self.bank_green_button = wx.Button(self, id=10002, label=u"은행\n건설", pos=(720, 210), size=(50, 30))
+        self.build_corn_button = wx.Button(self, id=1003, label=u"건설", pos=(660, 260), size=(50, 30))
+        self.bank_corn_button = wx.Button(self, id=10003, label=u"은행\n건설", pos=(720, 260), size=(50, 30))
         self.Layout()
         self.Centre(wx.BOTH)
         self.count = 0
@@ -568,12 +679,15 @@ class build(wx.Dialog):
         self.Bind(wx.EVT_BUTTON, self.build_black, id=1001)
         self.Bind(wx.EVT_BUTTON, self.build_green, id=1002)
         self.Bind(wx.EVT_BUTTON, self.build_corn, id=1003)
+        self.Bind(wx.EVT_BUTTON, self.banked_black, id=10001)
+        self.Bind(wx.EVT_BUTTON, self.banked_green, id=10002)
+        self.Bind(wx.EVT_BUTTON, self.banked_corn, id=10003)
         self.Bind(wx.EVT_BUTTON, self.deposit, id=11)
 
     def set_planet(self, event):
         self.choose_number = self.box.GetSelection()
-        self.show_resource()
         wx.Yield()
+        self.show_resource()
 
     def show_resource(self):
         planet_list = get_data.answer()
@@ -700,6 +814,8 @@ class build(wx.Dialog):
         dlg.Destroy()
 
     def exchange(self, label1, label2):
+        self.show_resource()
+        wx.Yield()
         if label1 == '가능':
             black_tea = 0
         else:
@@ -712,6 +828,97 @@ class build(wx.Dialog):
         exchange.attack_url = 'http://drugmil.net/2/xgp/game.php?page=trader'
         exchange.attack_data = {'ress': 'deuterium', 'metal': black_tea, 'cristal': green_tea}
         exchange.soup(exchange.post_attack())
+
+    def withdrawal(self, label1, label2):
+        if label1 == '가능':
+            black_tea = 0
+        else:
+            black_tea = int(label1[1:].replace(',', ''))
+        if label2 == '가능':
+            green_tea = 0
+        else:
+            green_tea = int(label2[1:].replace(',', ''))
+        my_corn = self.corn.GetLabel()
+        my_corn = int(my_corn.replace(',', ''))
+        print(my_corn)
+        print(black_tea, green_tea)
+        corn = (my_corn - (((black_tea // 4) + 1) + ((green_tea // 2) + 1))) * -1
+        print(corn)
+        exchange = Attack()
+        exchange.attack_url = 'http://drugmil.net/2/xgp/bank_bonus.php?mode=pack2'
+        exchange.attack_data = {'bc': corn}
+        message = exchange.soup(exchange.post_attack())
+        text = message.find('th', 'errormessage')
+        print(text)
+
+    def banked_black(self, event):
+        if self.if_exchange_black_1.GetLabel() == '가능':
+            dlg = wx.MessageDialog(self, '출금없이도 건설이 가능합니다', '건설 오류', wx.OK | wx.ICON_INFORMATION)
+            dlg.ShowModal()
+            dlg.Destroy()
+        else:
+            if self.if_withdrawal_black_1.GetLabel() == '불가능':
+                dlg = wx.MessageDialog(self, '건설이 불가능 합니다.', '건설 불가', wx.OK | wx.ICON_INFORMATION)
+                dlg.ShowModal()
+                dlg.Destroy()
+            else:
+                self.withdrawal(self.if_black_tea_1.GetLabel(), self.if_black_tea_2.GetLabel())
+                wx.Yield()
+                self.show_resource()
+                self.exchange(self.if_black_tea_1.GetLabel(), self.if_black_tea_2.GetLabel())
+                build_corn = Attack()
+                build_corn.attack_url = 'http://drugmil.net/2/xgp/game.php?page=buildings&cmd=insert&building=1&' + \
+                                        self.new_number[self.choose_number]
+                build_corn.get_attack()
+                dlg = wx.MessageDialog(self, '건설하였습니다..', '건설', wx.OK | wx.ICON_INFORMATION)
+                dlg.ShowModal()
+                dlg.Destroy()
+
+    def banked_green(self, event):
+        if self.if_exchange_green_1.GetLabel() == '가능':
+            dlg = wx.MessageDialog(self, '출금없이도 건설이 가능합니다', '건설 오류', wx.OK | wx.ICON_INFORMATION)
+            dlg.ShowModal()
+            dlg.Destroy()
+        else:
+            if self.if_withdrawal_green_1.GetLabel() == '불가능':
+                dlg = wx.MessageDialog(self, '건설이 불가능 합니다.', '건설 불가', wx.OK | wx.ICON_INFORMATION)
+                dlg.ShowModal()
+                dlg.Destroy()
+            else:
+                self.withdrawal(self.if_green_tea_1.GetLabel(), self.if_green_tea_2.GetLabel())
+                wx.Yield()
+                self.show_resource()
+                self.exchange(self.if_green_tea_1.GetLabel(), self.if_green_tea_2.GetLabel())
+                build_corn = Attack()
+                build_corn.attack_url = 'http://drugmil.net/2/xgp/game.php?page=buildings&cmd=insert&building=2&' + \
+                                        self.new_number[self.choose_number]
+                build_corn.get_attack()
+                dlg = wx.MessageDialog(self, '건설하였습니다..', '건설', wx.OK | wx.ICON_INFORMATION)
+                dlg.ShowModal()
+                dlg.Destroy()
+
+    def banked_corn(self, event):
+        if self.if_exchange_corn_1.GetLabel() == '가능':
+            dlg = wx.MessageDialog(self, '출금없이도 건설이 가능합니다', '건설 오류', wx.OK | wx.ICON_INFORMATION)
+            dlg.ShowModal()
+            dlg.Destroy()
+        else:
+            if self.if_withdrawal_corn_1.GetLabel() == '불가능':
+                dlg = wx.MessageDialog(self, '건설이 불가능 합니다.', '건설 불가', wx.OK | wx.ICON_INFORMATION)
+                dlg.ShowModal()
+                dlg.Destroy()
+            else:
+                self.withdrawal(self.if_corn_1.GetLabel(), self.if_corn_2.GetLabel())
+                wx.Yield()
+                self.show_resource()
+                self.exchange(self.if_corn_1.GetLabel(), self.if_corn_2.GetLabel())
+                build_corn = Attack()
+                build_corn.attack_url = 'http://drugmil.net/2/xgp/game.php?page=buildings&cmd=insert&building=3&' + \
+                                        self.new_number[self.choose_number]
+                build_corn.get_attack()
+                dlg = wx.MessageDialog(self, '건설하였습니다..', '건설', wx.OK | wx.ICON_INFORMATION)
+                dlg.ShowModal()
+                dlg.Destroy()
 
 
 class Menu(wx.Frame):
@@ -730,6 +937,7 @@ class Menu(wx.Frame):
         help_bar.Append(104, '&정보', '약괴밀 메크로 정보')
         convenience_bar.Append(107, '출석체크', '약괴밀 출석체크')
         convenience_bar.Append(108, '요정 메크로', '원하는 만큼 요정을 잡습니다')
+        convenience_bar.Append(113, '강적 메크로', '원하는 만큼 강적을 잡습니다')
         convenience_bar.Append(110, '카드팩 구매', '행동력으로 카드팩을 구매합니다')
         convenience_bar.Append(111, '만능풍뎅이 사용', '만능풍뎅이로 카드를 레벨업합니다.')
         convenience_bar.Append(112, '건설 도우미', '건물 건설에 필요한 기능들이 있습니다.')
@@ -787,6 +995,7 @@ class Menu(wx.Frame):
         self.Bind(wx.EVT_MENU, self.exchange_card, id=110)
         self.Bind(wx.EVT_MENU, self.exchange_beetle, id=111)
         self.Bind(wx.EVT_MENU, self.build_menu, id=112)  # 건물도우미
+        self.Bind(wx.EVT_MENU, self.show_enemy, id=113)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
     def on_quit(self, event):
@@ -861,6 +1070,17 @@ class Menu(wx.Frame):
             dlg.Destroy()
         else:
             dia1 = Fairy_attack(self, -1, '편의기능')
+            dia1.ShowModal()
+            dia1.Destroy()
+            wx.Yield()
+
+    def show_enemy(self, event):
+        if not os.path.isfile(global_data.folder_name + '/main.json'):
+            dlg = wx.MessageDialog(self, '메인 - 로그인으로 로그인먼저 해야합니다.', '로그인 필요', wx.OK | wx.ICON_INFORMATION)
+            dlg.ShowModal()
+            dlg.Destroy()
+        else:
+            dia1 = Enemy_attack(self, -1, '편의기능')
             dia1.ShowModal()
             dia1.Destroy()
             wx.Yield()
@@ -1005,14 +1225,7 @@ class Menu(wx.Frame):
         global_data.change_choose_number(self.box.GetSelection())
 
     def ifo(self, event):
-        dlg = wx.MessageDialog(self, '약괴밀 메크로 버전 3.1.1\n'
-                                     '3.0 : GUI 모드화  3.1 : 실행불가 버그 수정\n'
-                                     '3.1.1 : 정보창 추가  3.1.2 : 묘지관련 오류 수정\n'
-                                     '3.1.3 : 묘지관련 추가 오류 수정\n'
-                                     '3.2 : 쓰레드 기능 구현  3.3 : 약괴밀 화면기능 추가\n'
-                                     '3.3.1 : macro폴더 선택기능 추가  3.3.2 : 쓰레드 관련 오류 수정'
-                                     '3.4 : 약괴밀 화면기능 삭제, 편의기능 추가\n'
-                                     '3.5 : 편의기능 여러개 추가'
+        dlg = wx.MessageDialog(self, '약괴밀 메크로 버전 3.7\n'
                                      '\n제작자 : 마리사라', '정보', wx.OK | wx.ICON_INFORMATION)
         dlg.ShowModal()
         dlg.Destroy()
@@ -1021,12 +1234,34 @@ class Menu(wx.Frame):
         sys.exit()
 
 
+class Update(wx.MessageDialog):
+    def __init__(self, parent, message, caption, style):
+        wx.MessageDialog.__init__(self, parent, message, caption, style)
+
+
 class MyApp(wx.App):
     def OnInit(self):
-        frame = Menu(None, -1, '약괴밀 메크로 3.5')
-        frame.Show(True)
-        frame.Centre()
-        return True
+        header = {"Host": "drugmil.pythonanywhere.com", "Connection": "keep-alive",
+                  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                                'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36'}
+        url = 'https://drugmil.pythonanywhere.com/w/macro'
+        attack = requests.get(url=url, headers=header, allow_redirects=False, timeout=30)
+        html = attack.content
+        soup = BeautifulSoup(html, 'html.parser')
+        turn = soup.find('div', {'class': 'all_in_data'})
+        version = '3.71'
+        if float(turn.get_text()) <= float(version):
+            frame = Menu(None, -1, '약괴밀 매크로 ' + version)
+            frame.Show(True)
+            frame.Centre()
+            return True
+        else:
+            update = Update(None, '현재 버전 : ' + version + '\n새 버전 : ' + turn.get_text() + '\n구버전입니다. 업데이트가 필요합니다', '업데이트 필요', wx.OK | wx.ICON_INFORMATION)
+            update.ShowModal()
+            update.Centre()
+            update.Destroy()
+            os.system('explorer "https://drive.google.com/u/0/uc?id=17C2mFR77_YSmTY3867zNIJy2kcD9J2dr&export=download"')
+            return True
 
 
 if not os.path.isdir('macro'):
