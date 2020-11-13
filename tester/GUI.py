@@ -840,16 +840,12 @@ class build(wx.Dialog):
             green_tea = int(label2[1:].replace(',', ''))
         my_corn = self.corn.GetLabel()
         my_corn = int(my_corn.replace(',', ''))
-        print(my_corn)
-        print(black_tea, green_tea)
         corn = (my_corn - (((black_tea // 4) + 1) + ((green_tea // 2) + 1))) * -1
-        print(corn)
         exchange = Attack()
         exchange.attack_url = 'http://drugmil.net/2/xgp/bank_bonus.php?mode=pack2'
         exchange.attack_data = {'bc': corn}
         message = exchange.soup(exchange.post_attack())
         text = message.find('th', 'errormessage')
-        print(text)
 
     def banked_black(self, event):
         if self.if_exchange_black_1.GetLabel() == '가능':
