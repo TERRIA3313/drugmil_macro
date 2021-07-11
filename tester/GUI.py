@@ -31,6 +31,7 @@ class Global_data:
         self.counter = 0
         self.number_list_data = []
         self.folder_name = 'macro'
+        self.beetle = 0
 
     def add_number_list(self, list_data):
         self.number_list_data.append(list_data)
@@ -73,6 +74,9 @@ class Global_data:
 
     def change_counter(self, data):
         self.counter = data
+
+    def change_beetle(self, data):
+        self.beetle = data
 
 
 global_data = Global_data()
@@ -186,9 +190,9 @@ class Get_data:
 get_data = Get_data()
 
 
-class Dialog1(wx.Dialog):
-    def __init__(self, parent, id, title):
-        wx.Dialog.__init__(self, parent, id, title, pos=wx.DefaultPosition, size=wx.Size(300, 300))
+class make_data(wx.Dialog):
+    def __init__(self, parent, make_data_id, title):
+        wx.Dialog.__init__(self, parent, make_data_id, title, pos=wx.DefaultPosition, size=wx.Size(300, 300))
         self.SetSizeHintsSz(wx.DefaultSize, wx.DefaultSize)
         sizer1 = wx.BoxSizer(wx.VERTICAL)
         self.text_division = wx.StaticText(self, 2001, u"항공전대 갯수",
@@ -229,9 +233,9 @@ class Dialog1(wx.Dialog):
             json.dump(data, g, indent="\t")
 
 
-class Dialog(wx.Dialog):
-    def __init__(self, parent, id, title):
-        wx.Dialog.__init__(self, parent, id, title, pos=wx.DefaultPosition, size=wx.Size(300, 200))
+class login_dialog(wx.Dialog):
+    def __init__(self, parent, login_dialog_id, title):
+        wx.Dialog.__init__(self, parent, login_dialog_id, title, pos=wx.DefaultPosition, size=wx.Size(300, 200))
         self.SetSizeHintsSz(wx.DefaultSize, wx.DefaultSize)
         sizer1 = wx.BoxSizer(wx.VERTICAL)
         self.text_id = wx.StaticText(self, 1001, u"아이디", wx.DefaultPosition, wx.Size(300, -1), wx.ALIGN_CENTRE)
@@ -276,8 +280,8 @@ class Dialog(wx.Dialog):
 
 
 class Fairy_attack(wx.Dialog):
-    def __init__(self, parent, id, title):
-        wx.Dialog.__init__(self, parent, id, title, pos=wx.DefaultPosition, size=wx.Size(300, 400))
+    def __init__(self, parent, fairy_attack_id, title):
+        wx.Dialog.__init__(self, parent, fairy_attack_id, title, pos=wx.DefaultPosition, size=wx.Size(300, 400))
         sizer1 = wx.BoxSizer(wx.VERTICAL)
         self.text_counter = wx.StaticText(self, 1, u"원하는 요정 수", wx.DefaultPosition, wx.Size(100, -1), wx.ALIGN_CENTRE)
         self.text_counter.Wrap(-1)
@@ -343,8 +347,8 @@ class Fairy_attack(wx.Dialog):
 
 
 class Enemy_attack(wx.Dialog):
-    def __init__(self, parent, id, title):
-        wx.Dialog.__init__(self, parent, id, title, pos=wx.DefaultPosition, size=wx.Size(300, 400))
+    def __init__(self, parent, enemy_attack_id, title):
+        wx.Dialog.__init__(self, parent, enemy_attack_id, title, pos=wx.DefaultPosition, size=wx.Size(300, 400))
         sizer1 = wx.BoxSizer(wx.VERTICAL)
         self.text_counter = wx.StaticText(self, 1, u"원하는 강적 수", wx.DefaultPosition, wx.Size(100, -1), wx.ALIGN_CENTRE)
         self.text_counter.Wrap(-1)
@@ -435,8 +439,8 @@ class Enemy_attack(wx.Dialog):
 
 
 class card_pack(wx.Dialog):
-    def __init__(self, parent, id, title):
-        wx.Dialog.__init__(self, parent, id, title, pos=wx.DefaultPosition, size=wx.Size(350, 400))
+    def __init__(self, parent, card_pack_id, title):
+        wx.Dialog.__init__(self, parent, card_pack_id, title, pos=wx.DefaultPosition, size=wx.Size(350, 400))
         sizer1 = wx.BoxSizer(wx.VERTICAL)
         self.text_counter = wx.StaticText(self, 1, u"카드팩 이름", wx.DefaultPosition, wx.Size(100, -1), wx.ALIGN_CENTRE)
         self.text_counter.Wrap(-1)
@@ -487,40 +491,51 @@ class card_pack(wx.Dialog):
 
 
 class beetle_macro(wx.Dialog):
-    def __init__(self, parent, id, title):
-        wx.Dialog.__init__(self, parent, id, title, pos=wx.DefaultPosition, size=wx.Size(350, 400))
+    def __init__(self, parent, beetle_macro_id, title):
+        wx.Dialog.__init__(self, parent, beetle_macro_id, title, pos=wx.DefaultPosition, size=wx.Size(350, 400))
         sizer1 = wx.BoxSizer(wx.VERTICAL)
         self.text_counter = wx.StaticText(self, 1, u"카드 이름", wx.DefaultPosition, wx.Size(100, -1), wx.ALIGN_CENTRE)
         self.text_counter.Wrap(-1)
-        sizer1.Add(self.text_counter, 0, wx.ALL, 5)
         self.m_textCtrl1 = wx.TextCtrl(self, 2, wx.EmptyString, wx.DefaultPosition, wx.Size(100, -1), 0)
-        sizer1.Add(self.m_textCtrl1, 0, wx.ALL, 5)
         self.button = wx.Button(self, 3, u"교환", wx.DefaultPosition, wx.Size(100, -1), 0)
         self.stopper = wx.Button(self, 4, u"중지", wx.DefaultPosition, wx.Size(100, -1), 0)
+        self.count_list = wx.RadioBox(self, 501, "교환 갯수", wx.DefaultPosition, wx.DefaultSize,
+                                         ['1개', '100개'], 2, wx.RA_SPECIFY_COLS)
+
+        sizer1.Add(self.text_counter, 0, wx.ALL, 5)
+        sizer1.Add(self.m_textCtrl1, 0, wx.ALL, 5)
+        sizer1.Add(self.count_list, 0, wx.ALL, 5)
         sizer1.Add(self.button, 0, wx.ALL, 5)
         sizer1.Add(self.stopper, 0, wx.ALL, 5)
+
         self.beetle_list_data = []
-        self.beelte_list = wx.ListBox(self, -1, (130, 5), (200, 350), self.beetle_list_data, wx.LB_SINGLE)
+        self.beetle_list = wx.ListBox(self, -1, (130, 5), (200, 350), self.beetle_list_data, wx.LB_SINGLE)
         self.SetSizer(sizer1)
         self.Layout()
         self.Centre(wx.BOTH)
+
         self.Bind(wx.EVT_BUTTON, self.thread, id=3)
-        self.count = 0
         self.Bind(wx.EVT_BUTTON, self.stop, id=4)
+        self.Bind(wx.EVT_RADIOBOX, self.change, self.count_list)
+
+        self.count = 0
 
     def thread(self, event):
         if self.count == 0:
-            self.t1 = threading.Thread(target=self.exchange)
-            self.t1.setDaemon(True)
+            t1 = threading.Thread(target=self.exchange)
+            t1.setDaemon(True)
             self.count = 1
-            self.t1.start()
+            t1.start()
         else:
             dlg = wx.MessageDialog(self, '교환이 이미 진행중입니다', '교환 공격중', wx.OK | wx.ICON_INFORMATION)
             dlg.ShowModal()
             dlg.Destroy()
 
     def exchange(self):
-        self.beetle_exchange(str(self.m_textCtrl1.GetValue()))
+        if global_data.beetle == 0:
+            self.beetle_exchange(str(self.m_textCtrl1.GetValue()))
+        else:
+            self.beetle_100_exchange(str(self.m_textCtrl1.GetValue()))
         wx.Yield()
         dlg = wx.MessageDialog(self, '교환 완료!', '교환완료', wx.OK | wx.ICON_INFORMATION)
         dlg.ShowModal()
@@ -536,19 +551,37 @@ class beetle_macro(wx.Dialog):
             soup = beetle.soup(beetle.post_attack())
             answer = soup.find('th', 'errormessage').get_text()
             if not ('만능풍뎅이' in answer or '최대 레벨' in answer):
-                self.beelte_list.Append(answer)
+                self.beetle_list.Append(answer)
             wx.Yield()
             time.sleep(0.4)
             if self.count != 1:
                 break
+
+    def beetle_100_exchange(self, name):
+        beetle = Attack()
+        beetle.attack_url = "http://drugmil.net/2/xgp/pack_bonus17.php?mode=pack1001"
+        beetle.attack_data = {'bc': name}
+        answer = ''
+        while not ('만능풍뎅이' in answer or '최대 레벨' in answer):
+            soup = beetle.soup(beetle.post_attack())
+            answer = soup.find('th', 'errormessage').get_text()
+            if not ('만능풍뎅이' in answer or '최대 레벨' in answer):
+                self.beetle_list.Append(answer)
+            wx.Yield()
+            time.sleep(0.4)
+            break
+
+    def change(self, event):
+        global_data.change_beetle(self.count_list.GetSelection())
+        print(global_data.beetle)
 
     def stop(self, event):
         self.count = 0
 
 
 class build(wx.Dialog):
-    def __init__(self, parent, id, title):
-        wx.Dialog.__init__(self, parent, id, title, pos=wx.DefaultPosition, size=wx.Size(800, 350))
+    def __init__(self, parent, build_id, title):
+        wx.Dialog.__init__(self, parent, build_id, title, pos=wx.DefaultPosition, size=wx.Size(800, 350))
         wx.StaticText(self, id=1, label='건설 행성', pos=(35, 10))
         a_list, p_list = [], []
         if os.path.isfile(global_data.folder_name + '/main.json'):
@@ -763,6 +796,14 @@ class build(wx.Dialog):
         else:
             self.if_exchange_corn_1.SetLabel(u'불가능')
 
+        bank_data = Attack()
+        bank_data.attack_url = "http://drugmil.net/2/xgp/bank.php"
+        bank_soup = bank_data.soup(bank_data.get_attack())
+        bank_account = bank_soup.find_all('font', {'color': 'lime'})
+        bank_account = int(bank_account[1].get_text().replace(',', ''))
+
+        self.bank_corn.SetLabel(format(bank_account, ','))
+
     def build_black(self, event):
         if self.if_exchange_black_1.GetLabel() == '불가능':
             dlg = wx.MessageDialog(self, '건설이 불가능 합니다.', '건설 불가', wx.OK | wx.ICON_INFORMATION)
@@ -771,7 +812,8 @@ class build(wx.Dialog):
         else:
             self.exchange(self.if_black_tea_1.GetLabel(), self.if_black_tea_2.GetLabel())
             build_black = Attack()
-            build_black.attack_url = 'http://drugmil.net/2/xgp/game.php?page=buildings&cmd=insert&building=1&' + self.new_number[self.choose_number]
+            build_black.attack_url = 'http://drugmil.net/2/xgp/game.php?page=buildings&cmd=insert&building=1&' +\
+                                     self.new_number[self.choose_number]
             build_black.get_attack()
             dlg = wx.MessageDialog(self, '건설하였습니다..', '건설', wx.OK | wx.ICON_INFORMATION)
             dlg.ShowModal()
@@ -785,7 +827,8 @@ class build(wx.Dialog):
         else:
             self.exchange(self.if_green_tea_1.GetLabel(), self.if_green_tea_2.GetLabel())
             build_green = Attack()
-            build_green.attack_url = 'http://drugmil.net/2/xgp/game.php?page=buildings&cmd=insert&building=2&' + self.new_number[self.choose_number]
+            build_green.attack_url = 'http://drugmil.net/2/xgp/game.php?page=buildings&cmd=insert&building=2&' +\
+                                     self.new_number[self.choose_number]
             build_green.get_attack()
             dlg = wx.MessageDialog(self, '건설하였습니다..', '건설', wx.OK | wx.ICON_INFORMATION)
             dlg.ShowModal()
@@ -799,7 +842,8 @@ class build(wx.Dialog):
         else:
             self.exchange(self.if_corn_1.GetLabel(), self.if_corn_2.GetLabel())
             build_corn = Attack()
-            build_corn.attack_url = 'http://drugmil.net/2/xgp/game.php?page=buildings&cmd=insert&building=3&' + self.new_number[self.choose_number]
+            build_corn.attack_url = 'http://drugmil.net/2/xgp/game.php?page=buildings&cmd=insert&building=3&' +\
+                                    self.new_number[self.choose_number]
             build_corn.get_attack()
             dlg = wx.MessageDialog(self, '건설하였습니다..', '건설', wx.OK | wx.ICON_INFORMATION)
             dlg.ShowModal()
@@ -917,9 +961,9 @@ class build(wx.Dialog):
                 dlg.Destroy()
 
 
-class Menu(wx.Frame):
-    def __init__(self, parent, id, title):
-        wx.Frame.__init__(self, parent, id, title, wx.DefaultPosition, size=(460, 720),
+class main(wx.Frame):
+    def __init__(self, parent, main_id, title):
+        wx.Frame.__init__(self, parent, main_id, title, wx.DefaultPosition, size=(460, 720),
                           style=wx.DEFAULT_FRAME_STYLE ^ wx.MAXIMIZE_BOX)  # 기본 사이즈 460, 720
         menu_bar = wx.MenuBar()
         file_bar = wx.Menu()
@@ -1050,7 +1094,7 @@ class Menu(wx.Frame):
 
     def show_custom_dialog(self, event):
         if not os.path.isfile(global_data.folder_name + '/main.json'):
-            dia = Dialog(self, -1, '로그인')
+            dia = login_dialog(self, -1, '로그인')
             dia.ShowModal()
             dia.Destroy()
             wx.Yield()
@@ -1083,7 +1127,7 @@ class Menu(wx.Frame):
 
     def show_data_dialog(self, event):
         if not os.path.isfile(global_data.folder_name + '/data.json'):
-            dia1 = Dialog1(self, -1, '데이터 작성')
+            dia1 = make_data(self, -1, '데이터 작성')
             dia1.ShowModal()
             dia1.Destroy()
             wx.Yield()
@@ -1221,7 +1265,8 @@ class Menu(wx.Frame):
         global_data.change_choose_number(self.box.GetSelection())
 
     def ifo(self, event):
-        dlg = wx.MessageDialog(self, '약괴밀 메크로 버전 3.7\n'
+        global version
+        dlg = wx.MessageDialog(self, '약괴밀 메크로 버전 ' + version + '\n'
                                      '\n제작자 : 마리사라', '정보', wx.OK | wx.ICON_INFORMATION)
         dlg.ShowModal()
         dlg.Destroy()
@@ -1235,24 +1280,27 @@ class Update(wx.MessageDialog):
         wx.MessageDialog.__init__(self, parent, message, caption, style)
 
 
-class MyApp(wx.App):
+version = '3.72'
+
+
+class starter(wx.App):
     def OnInit(self):
-        header = {"Host": "drugmil.pythonanywhere.com", "Connection": "keep-alive",
+        header = {"authority": "drive.google.com", "Connection": "keep-alive",
                   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
                                 'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36'}
-        url = 'https://drugmil.pythonanywhere.com/w/macro'
-        attack = requests.get(url=url, headers=header, allow_redirects=False, timeout=30)
+        url = 'https://docs.google.com/spreadsheets/d/1Eq9_C5l5RPVJvPNcHWjcdXXO-tXrcUk3/edit#gid=555607571'
+        attack = requests.get(url=url, headers=header, timeout=30)
         html = attack.content
         soup = BeautifulSoup(html, 'html.parser')
-        turn = soup.find('div', {'class': 'all_in_data'})
-        version = '3.71'
+        turn = soup.find("td", {"class": "s0"})
         if float(turn.get_text()) <= float(version):
-            frame = Menu(None, -1, '약괴밀 매크로 ' + version)
+            frame = main(None, -1, '약괴밀 매크로 ' + version)
             frame.Show(True)
             frame.Centre()
             return True
         else:
-            update = Update(None, '현재 버전 : ' + version + '\n새 버전 : ' + turn.get_text() + '\n구버전입니다. 업데이트가 필요합니다', '업데이트 필요', wx.OK | wx.ICON_INFORMATION)
+            update = Update(None, '현재 버전 : ' + version + '\n새 버전 : ' + turn.get_text() +
+                            '\n구버전입니다. 업데이트가 필요합니다', '업데이트 필요', wx.OK | wx.ICON_INFORMATION)
             update.ShowModal()
             update.Centre()
             update.Destroy()
@@ -1262,5 +1310,5 @@ class MyApp(wx.App):
 
 if not os.path.isdir('macro'):
     os.mkdir('macro')
-app = MyApp(0)
+app = starter(0)
 app.MainLoop()
