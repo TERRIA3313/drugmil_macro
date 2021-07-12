@@ -49,7 +49,7 @@ class Global_data:
         return self.planet_type_data
 
     def change_planet_type(self, data):
-        self.planet_type_data = data
+        self.planet_type_data = int(data)
 
     def choice(self):
         return self.choice
@@ -573,7 +573,6 @@ class beetle_macro(wx.Dialog):
 
     def change(self, event):
         global_data.change_beetle(self.count_list.GetSelection())
-        print(global_data.beetle)
 
     def stop(self, event):
         self.count = 0
@@ -961,6 +960,63 @@ class build(wx.Dialog):
                 dlg.Destroy()
 
 
+class all_bank_deposit(wx.Dialog):
+    def __init__(self, parent, card_pack_id, title):
+        wx.Dialog.__init__(self, parent, card_pack_id, title, pos=wx.DefaultPosition, size=wx.Size(350, 400))
+        sizer1 = wx.BoxSizer(wx.VERTICAL)
+        planet_type = ['묘지 제외', '묘지 포함']
+        self.planet_choice = wx.RadioBox(self, 1, "묘지 포함 여부", (155, 13), wx.DefaultSize,
+                                         planet_type, 2, wx.RA_SPECIFY_ROWS)
+        sizer1.Add(self.planet_choice, 0, wx.ALL, 5)
+        self.button = wx.Button(self, 3, u"입금", wx.DefaultPosition, wx.Size(100, -1), 0)
+        sizer1.Add(self.button, 0, wx.ALL, 5)
+        self.deposit_list_data = []
+        self.deposit_list = wx.ListBox(self, -1, (130, 5), (200, 350), self.deposit_list_data, wx.LB_SINGLE)
+        self.SetSizer(sizer1)
+        self.Layout()
+        self.Centre(wx.BOTH)
+        self.Bind(wx.EVT_BUTTON, self.thread, id=3)
+        self.count = 0
+
+    def thread(self, event):
+        if self.count == 0:
+            t1 = threading.Thread(target=self.bank)
+            t1.setDaemon(True)
+            self.count = 1
+            t1.start()
+        else:
+            dlg = wx.MessageDialog(self, '입금이 이미 진행중입니다', '입금 진행중', wx.OK | wx.ICON_INFORMATION)
+            dlg.ShowModal()
+            dlg.Destroy()
+
+    def bank(self):
+        self.deposit()
+        wx.Yield()
+        dlg = wx.MessageDialog(self, '입금 완료!', '입금 완료', wx.OK | wx.ICON_INFORMATION)
+        dlg.ShowModal()
+        dlg.Destroy()
+        self.count = 0
+
+    def deposit(self):
+        a_list, new_number = [], []
+        if os.path.isfile(global_data.folder_name + '/main.json'):
+            a_list = get_data.answer()
+            n = global_data.number_list()
+            count = 0
+            for i in a_list:
+                if '(묘지)' not in i and self.planet_choice.GetSelection() == 0:
+                    new_number.append(n[count])
+                elif self.planet_choice.GetSelection() == 1:
+                    new_number.append(n[count])
+                count += 1
+        bank = Attack()
+        for i in range(len(new_number)):
+            bank.attack_url = 'http://drugmil.net/2/xgp/bank_bonus.php?mode=pack79&' + new_number[i]
+            message = bank.soup(bank.get_attack()).find('th', 'errormessage').get_text()
+            self.deposit_list.Append(message[17:])
+            time.sleep(0.5)
+
+
 class main(wx.Frame):
     def __init__(self, parent, main_id, title):
         wx.Frame.__init__(self, parent, main_id, title, wx.DefaultPosition, size=(460, 720),
@@ -981,6 +1037,7 @@ class main(wx.Frame):
         convenience_bar.Append(110, '카드팩 구매', '행동력으로 카드팩을 구매합니다')
         convenience_bar.Append(111, '만능풍뎅이 사용', '만능풍뎅이로 카드를 레벨업합니다.')
         convenience_bar.Append(112, '건설 도우미', '건물 건설에 필요한 기능들이 있습니다.')
+        convenience_bar.Append(114, '자원 일괄 입금', '모든 행성의 자원을 은행에 입금합니다.')
         menu_bar.Append(file_bar, '&메인')
         menu_bar.Append(convenience_bar, '&편의기능')
         menu_bar.Append(help_bar, '&정보')
@@ -1036,16 +1093,29 @@ class main(wx.Frame):
         self.Bind(wx.EVT_MENU, self.exchange_beetle, id=111)
         self.Bind(wx.EVT_MENU, self.build_menu, id=112)  # 건물도우미
         self.Bind(wx.EVT_MENU, self.show_enemy, id=113)
+        self.Bind(wx.EVT_MENU, self.all_bank, id=114)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
+
+    def not_login(self):
+        dlg = wx.MessageDialog(self, '메인 - 로그인으로 로그인먼저 해야합니다.', '로그인 필요', wx.OK | wx.ICON_INFORMATION)
+        dlg.ShowModal()
+        dlg.Destroy()
 
     def on_quit(self, event):
         self.Close()
 
+    def all_bank(self, event):
+        if not os.path.isfile(global_data.folder_name + '/main.json'):
+            self.not_login()
+        else:
+            dia1 = all_bank_deposit(self, -1, '전 행성 입금 도우미')
+            dia1.ShowModal()
+            dia1.Destroy()
+            wx.Yield()
+
     def build_menu(self, event):
         if not os.path.isfile(global_data.folder_name + '/main.json'):
-            dlg = wx.MessageDialog(self, '메인 - 로그인으로 로그인먼저 해야합니다.', '로그인 필요', wx.OK | wx.ICON_INFORMATION)
-            dlg.ShowModal()
-            dlg.Destroy()
+            self.not_login()
         else:
             dia1 = build(self, -1, '건물 건설 도우미')
             dia1.ShowModal()
@@ -1054,9 +1124,7 @@ class main(wx.Frame):
 
     def exchange_card(self, event):
         if not os.path.isfile(global_data.folder_name + '/main.json'):
-            dlg = wx.MessageDialog(self, '메인 - 로그인으로 로그인먼저 해야합니다.', '로그인 필요', wx.OK | wx.ICON_INFORMATION)
-            dlg.ShowModal()
-            dlg.Destroy()
+            self.not_login()
         else:
             dia1 = card_pack(self, -1, '카드팩 매크로')
             dia1.ShowModal()
@@ -1065,9 +1133,7 @@ class main(wx.Frame):
 
     def exchange_beetle(self, event):
         if not os.path.isfile(global_data.folder_name + '/main.json'):
-            dlg = wx.MessageDialog(self, '메인 - 로그인으로 로그인먼저 해야합니다.', '로그인 필요', wx.OK | wx.ICON_INFORMATION)
-            dlg.ShowModal()
-            dlg.Destroy()
+            self.not_login()
         else:
             dia1 = beetle_macro(self, -1, '만풍교환 매크로')
             dia1.ShowModal()
@@ -1075,13 +1141,16 @@ class main(wx.Frame):
             wx.Yield()
 
     def attend(self, event):
-        attend = Attack()
-        attend.attack_url = 'http://drugmil.net/2/xgp/pack_bonus3.php?mode=pack16'
-        data = attend.soup(attend.get_attack())
-        text = data.find('th', 'errormessage').get_text()
-        dlg = wx.MessageDialog(self, text, '출석체크', wx.OK | wx.ICON_INFORMATION)
-        dlg.ShowModal()
-        dlg.Destroy()
+        if not os.path.isfile(global_data.folder_name + '/main.json'):
+            self.not_login()
+        else:
+            attend = Attack()
+            attend.attack_url = 'http://drugmil.net/2/xgp/pack_bonus3.php?mode=pack16'
+            data = attend.soup(attend.get_attack())
+            text = data.find('th', 'errormessage').get_text()
+            dlg = wx.MessageDialog(self, text, '출석체크', wx.OK | wx.ICON_INFORMATION)
+            dlg.ShowModal()
+            dlg.Destroy()
 
     def open_dir(self, event):
         open_dlg = wx.DirDialog(self, "macro 폴더 선택")
@@ -1105,9 +1174,7 @@ class main(wx.Frame):
 
     def show_fairy(self, event):
         if not os.path.isfile(global_data.folder_name + '/main.json'):
-            dlg = wx.MessageDialog(self, '메인 - 로그인으로 로그인먼저 해야합니다.', '로그인 필요', wx.OK | wx.ICON_INFORMATION)
-            dlg.ShowModal()
-            dlg.Destroy()
+            self.not_login()
         else:
             dia1 = Fairy_attack(self, -1, '편의기능')
             dia1.ShowModal()
@@ -1116,9 +1183,7 @@ class main(wx.Frame):
 
     def show_enemy(self, event):
         if not os.path.isfile(global_data.folder_name + '/main.json'):
-            dlg = wx.MessageDialog(self, '메인 - 로그인으로 로그인먼저 해야합니다.', '로그인 필요', wx.OK | wx.ICON_INFORMATION)
-            dlg.ShowModal()
-            dlg.Destroy()
+            self.not_login()
         else:
             dia1 = Enemy_attack(self, -1, '편의기능')
             dia1.ShowModal()
@@ -1138,9 +1203,7 @@ class main(wx.Frame):
 
     def make_macro(self, event):
         if not os.path.isfile(global_data.folder_name + '/main.json'):
-            dlg = wx.MessageDialog(self, '메인 - 로그인으로 로그인먼저 해야합니다.', '로그인 필요', wx.OK | wx.ICON_INFORMATION)
-            dlg.ShowModal()
-            dlg.Destroy()
+            self.not_login()
         elif not os.path.isfile(global_data.folder_name + '/data.json'):
             dlg = wx.MessageDialog(self, '메인 - 데이터작성 으로 데이터 작성먼저 해야합니다.', '데이터 작성 필요', wx.OK | wx.ICON_INFORMATION)
             dlg.ShowModal()
@@ -1170,9 +1233,10 @@ class main(wx.Frame):
                     usedfleet = json.load(json_file2)
                 usedfleet[temp1[0]] = temp2[0]
                 usedfleet[temp1[1]] = temp2[1]
-            temp3 = {'thisplanettype': '1'}
-            if global_data.planet_type == 1:
-                temp3['thisplanettype'] = '3'
+            if global_data.planet_type() == 1:
+                temp3 = {'thisplanettype': '3'}
+            else:
+                temp3 = {'thisplanettype': '1'}
 
             data = {'thisgalaxy': galaxy, 'thissystem': system, 'thisplanet': planet, 'galaxy': galaxy_end,
                     'system': system_end, 'planet': planet_end, 'speed': '10', 'mission': '1', 'holdingtime': '0',
@@ -1206,10 +1270,8 @@ class main(wx.Frame):
     def attack(self):
         attack_list = get_data.get_filename()
         if not os.path.isfile(global_data.folder_name + '/main.json'):
-            dlg = wx.MessageDialog(self, '메인 - 로그인으로 로그인먼저 해야합니다.', '로그인 필요', wx.OK | wx.ICON_INFORMATION)
-            dlg.ShowModal()
+            self.not_login()
             global_data.change_counter(0)
-            dlg.Destroy()
         elif not os.path.isfile(global_data.folder_name + '/data.json'):
             dlg = wx.MessageDialog(self, '메인 - 데이터작성 으로 데이터 작성먼저 해야합니다.', '데이터 작성 필요', wx.OK | wx.ICON_INFORMATION)
             dlg.ShowModal()
@@ -1242,19 +1304,22 @@ class main(wx.Frame):
         n = ''
         while attack_counter < len(h_data):
             if temp in attack_list[attack_counter]:
-                if json_data1['thisplanettype'] == '3' and str('(묘지)') in attack_list[attack_counter]:
+                if json_data1['thisplanettype'] == '3' and '(묘지)' in attack_list[attack_counter]:
                     n = str(global_data.number_list()[attack_counter])
                     break
                 else:
-                    if not str('(묘지)') in attack_list[attack_counter]:
+                    if not str('(묘지)') in attack_list[attack_counter] and json_data1['thisplanettype'] == '1':
                         n = str(global_data.number_list()[attack_counter])
                         break
             attack_counter += 1
         attack.attack_url = "http://drugmil.net/2/xgp/game.php?page=fleet3&" + n
         attack.attack_data = json_data1
-        res = attack.post_attack().status_code
+        attack_data = attack.post_attack()
+        res = attack_data.status_code
         viewer = point[:-5]
+        debug = BeautifulSoup(attack_data.content, "html.parser")
         if not res == 200:
+            print(debug)
             self.attack_list.Append(viewer + '는 공격하지 못했습니다.')
         else:
             self.attack_list.Append(viewer + '를 공격했습니다.')
@@ -1280,7 +1345,7 @@ class Update(wx.MessageDialog):
         wx.MessageDialog.__init__(self, parent, message, caption, style)
 
 
-version = '3.72'
+version = '3.81'
 
 
 class starter(wx.App):
