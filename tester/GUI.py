@@ -1011,6 +1011,12 @@ class all_bank_deposit(wx.Dialog):
                 count += 1
         bank = Attack()
         for i in range(len(new_number)):
+            bank.attack_url = "http://drugmil.net/2/xgp/game.php?page=overview&" + new_number[i]
+            bank.get_attack()
+
+            bank.attack_url = "http://drugmil.net/2/xgp/bank.php"
+            bank.get_attack()
+            
             bank.attack_url = 'http://drugmil.net/2/xgp/bank_bonus.php?mode=pack79&' + new_number[i]
             message = bank.soup(bank.get_attack()).find('th', 'errormessage').get_text()
             self.deposit_list.Append(message[17:])
